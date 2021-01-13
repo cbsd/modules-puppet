@@ -30,10 +30,10 @@
 # @example
 # class { "ttys":
 #   ttyv => [
-#     { name => 'console',    getty => 'none',                                type => 'unknown',      status => 'off',                comments => 'secure' },
-#     { name => 'ttyv0',      getty => '"/usr/libexec/getty Pc"',             type => 'xterm',        status => 'on',                 comments => 'secure' },
-#     { name => 'ttyv1',      getty => '"/usr/libexec/getty Pc"',             type => 'xterm',        status => 'on',                 comments => 'secure' },
-#     { name => 'ttyv2',      getty => '"/usr/libexec/getty Pc"',             type => 'xterm',        status => 'on',                 comments => 'secure' },
+#     { name => 'console',    getty => 'none',                                type => 'unknown',      status => 'off',                comments => 'insecure' },
+#     { name => 'ttyv0',      getty => '"/usr/libexec/getty Pc"',             type => 'xterm',        status => 'onifexists',         comments => 'secure' },
+#     { name => 'ttyv1',      getty => '"/usr/libexec/getty Pc"',             type => 'xterm',        status => 'onifexists',         comments => 'secure' },
+#     { name => 'ttyv2',      getty => '"/usr/libexec/getty Pc"',             type => 'xterm',        status => 'onifexists',         comments => 'secure' },
 #     { name => 'ttyu0',      getty => '"/usr/libexec/getty 3wire"',          type => 'vt100',        status => 'onifconsole',        comments => 'secure' },
 #     { name => 'ttyu1',      getty => '"/usr/libexec/getty 3wire"',          type => 'vt100',        status => 'onifconsole',        comments => 'secure' },
 #     { name => 'dcons',      getty => '"/usr/libexec/getty std.9600"',       type => 'vt100',        status => 'off',                comments => 'secure' },
@@ -51,26 +51,26 @@
 # Copyright 2016 Your name here, unless otherwise noted.
 #
 class ttys (
-    $ttyv="",
-    $ttys_file = $ttys::params::ttys_file,
+	$ttyv="",
+	$ttys_file = $ttys::params::ttys_file,
 ) inherits ttys::params {
 
-    if $ttyv == "" {
-        fail("$module_name: empty ttyv variable")
-    }
+	if $ttyv == "" {
+		fail("$module_name: empty ttyv variable")
+	}
 
-    file { $ttys_file:
-        mode => '0644',
-        ensure  => present,
-        content => template("${module_name}/ttys.erb"),
-        owner => 0,
-        group => 0,
-    }
+	file { $ttys_file:
+		mode => '0644',
+		ensure  => present,
+		content => template("${module_name}/ttys.erb"),
+		owner => 0,
+		group => 0,
+	}
 
-    exec { 'update_timezone':
-        command     => "kill -1 1",
-        path        => '/usr/bin:/usr/sbin:/bin:/sbin',
-        subscribe   => File[$ttys_file],
-        refreshonly => true,
-    }
+	exec { 'update_init':
+		command     => "kill -1 1",
+		path        => '/usr/bin:/usr/sbin:/bin:/sbin',
+		subscribe   => File[$ttys_file],
+		refreshonly => true,
+	}
 }

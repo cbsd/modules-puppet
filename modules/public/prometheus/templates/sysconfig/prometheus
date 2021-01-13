@@ -1,3 +1,0 @@
-# File managed by puppet
-#
-ARGS="<%= scope.function_template(['prometheus/_prometheus.erb']) %>"

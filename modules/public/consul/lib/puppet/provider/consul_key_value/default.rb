@@ -15,8 +15,9 @@ Puppet::Type.type(:consul_key_value).provide(
       protocol = resource[:protocol]
       token = resource[:acl_api_token]
       tries = resource[:api_tries]
+      datacenter = resource[:datacenter]
 
-      found_key_values = list_resources(token, port, hostname, protocol, tries).select do |key_value|
+      found_key_values = list_resources(token, port, hostname, protocol, tries, datacenter).select do |key_value|
         key_value[:name] == name
       end
 
@@ -31,18 +32,17 @@ Puppet::Type.type(:consul_key_value).provide(
     end
   end
 
-  def self.list_resources(acl_api_token, port, hostname, protocol, tries)
-    if @key_values
-      return @key_values
+  def self.list_resources(acl_api_token, port, hostname, protocol, tries, datacenter)
+    @key_values ||= {}
+    if @key_values[ "#{acl_api_token}#{port}#{hostname}#{protocol}#{tries}#{datacenter}" ]
+      return @key_values[ "#{acl_api_token}#{port}#{hostname}#{protocol}#{tries}#{datacenter}" ]
     end
 
     # this might be configurable by searching /etc/consul.d
     # but would break for anyone using nonstandard paths
-    uri = URI("#{protocol}://#{hostname}:#{port}/v1/kv/?recurse")
-    http = Net::HTTP.new(uri.host, uri.port)
+    consul_url = "#{protocol}://#{hostname}:#{port}/v1/kv/?dc=#{datacenter}&recurse&token=#{acl_api_token}"
 
-    path=uri.request_uri + "&token=#{acl_api_token}"
-    req = Net::HTTP::Get.new(path)
+    uri = URI(consul_url)
     res = nil
 
     # retry Consul API query for ACLs, in case Consul has just started
@@ -51,7 +51,7 @@ Puppet::Type.type(:consul_key_value).provide(
         Puppet.debug("retrying Consul API query in #{i} seconds")
         sleep i
       end
-      res = http.request(req)
+      res = Net::HTTP.get_response(uri)
       break if res.code == '200'
     end
 
@@ -62,27 +62,33 @@ Puppet::Type.type(:consul_key_value).provide(
     elsif res.code == '404'
       return []
     else
-      Puppet.warning("Cannot retrieve key_values: invalid return code #{res.code} uri: #{path} body: #{req.body}")
+      Puppet.warning("Cannot retrieve key_values: invalid return code #{res.code} uri: #{uri.request_uri}")
       return {}
     end
 
     nkey_values = key_values.collect do |key_value|
       {
-        :name    => key_value["Key"],
-        :value   => (key_value["Value"] == nil ? '' : Base64.decode64(key_value["Value"])),
-        :flags   => Integer(key_value["Flags"]),
-        :ensure  => :present,
+        :name     => key_value["Key"],
+        :value    => (key_value["Value"] == nil ? '' : Base64.decode64(key_value["Value"])),
+        :flags    => Integer(key_value["Flags"]),
+        :ensure   => :present,
+        :protocol => protocol,
       }
     end
-    @key_values = nkey_values
+    @key_values[ "#{acl_api_token}#{port}#{hostname}#{protocol}#{tries}#{datacenter}" ] = nkey_values
     nkey_values
   end
 
+  # Reset the state of the provider between tests.
+  def self.reset()
+    @key_values = {}
+  end
+
   def get_path(name)
-    uri = URI("#{@resource[:protocol]}://#{@resource[:hostname]}:#{@resource[:port]}/v1/kv/#{name}")
+    uri = URI("#{@resource[:protocol]}://#{@resource[:hostname]}:#{@resource[:port]}/v1/kv/#{name}?dc=#{@resource[:datacenter]}&token=#{@resource[:acl_api_token]}")
     http = Net::HTTP.new(uri.host, uri.port)
     acl_api_token = @resource[:acl_api_token]
-    return uri.request_uri + "?token=#{acl_api_token}", http
+    return uri.request_uri, http
   end
 
   def create_or_update_key_value(name, value, flags)
@@ -104,9 +110,9 @@ Puppet::Type.type(:consul_key_value).provide(
     end
   end
 
-  def get_resource(name, port, hostname, protocol, tries)
+  def get_resource(name, port, hostname, protocol, tries, datacenter)
     acl_api_token = @resource[:acl_api_token]
-    resources = self.class.list_resources(acl_api_token, port, hostname, protocol, tries).select do |res|
+    resources = self.class.list_resources(acl_api_token, port, hostname, protocol, tries, datacenter).select do |res|
       res[:name] == name
     end
     # if the user creates multiple with the same name this will do odd things
@@ -131,6 +137,10 @@ Puppet::Type.type(:consul_key_value).provide(
   end
 
   def flush
+    # flush is only called when something really needs to change.
+    # a property has a different value or maybe the resource needs to be created or destroyed.
+    # http://garylarizza.com/blog/2013/12/15/seriously-what-is-this-provider-doing/
+
     name = @resource[:name]
     flags = @resource[:flags]
     value = @resource[:value]
@@ -138,15 +148,14 @@ Puppet::Type.type(:consul_key_value).provide(
     hostname = @resource[:hostname]
     protocol = @resource[:protocol]
     tries = @resource[:api_tries]
-    key_value = self.get_resource(name, port, hostname, protocol, tries)
-    if key_value
-      if @property_flush[:ensure] == :absent
-        delete_key_value(name)
-        return
-      end
-      create_or_update_key_value(name, value, flags)
+    datacenter = @resource[:datacenter]
+    key_value = self.get_resource(name, port, hostname, protocol, tries, datacenter)
 
+    if @property_flush[:ensure] == :absent
+      #key exists in the kv, but must be deleted. 
+      delete_key_value(name)
     else
+      #something changed, otherwise the flush method would not have been called.
       create_or_update_key_value(name, value, flags)
     end
     @property_hash.clear

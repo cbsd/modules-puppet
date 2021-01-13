@@ -2,16 +2,27 @@ require 'spec_helper'
 
 describe 'prometheus::pushgateway' do
   on_supported_os.each do |os, facts|
-    context "with defaults on #{os}" do
+    context "on #{os}" do
       let(:facts) do
-        facts.merge({:puppetmaster => 'localhost.localdomain'})
+        facts.merge(os_specific_facts(facts))
       end
 
-      it { should compile.with_all_deps }
-      it { should contain_class('prometheus::pushgateway') }
-      it { should contain_class('prometheus::pushgateway::config') }
-      it { should contain_class('prometheus::pushgateway::install') }
-      it { should contain_class('prometheus::pushgateway::service') }
+      context 'with version specified' do
+        let(:params) do
+          {
+            version: '0.4.0',
+            arch: 'amd64',
+            os: 'linux',
+            bin_dir: '/usr/local/bin',
+            install_method: 'url'
+          }
+        end
+
+        describe 'install correct binary' do
+          it { is_expected.to contain_file('/usr/local/bin/pushgateway').with('target' => '/opt/pushgateway-0.4.0.linux-amd64/pushgateway') }
+          it { is_expected.to compile.with_all_deps }
+        end
+      end
     end
   end
 end

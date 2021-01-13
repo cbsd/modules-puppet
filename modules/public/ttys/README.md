@@ -13,7 +13,7 @@ Manage /etc/ttys file content on FreeBSD platform
 
 ## Usage
 
-~~
+~~~
  class { "ttys":
    ttyv => [
      { name => 'console',    getty => 'none',                                type => 'unknown',      status => 'off',                comments => 'secure' },

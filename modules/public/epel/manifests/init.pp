@@ -1,15 +1,24 @@
-# Class epel
+# @summary Configure the proper EPEL repositories and import GPG keys
 #
-# Actions:
-#   Configure the proper repositories and import GPG keys
+# @param epel_managed
+#   Determines if the main EPEL repository is managed.
+# @param epel_source_managed
+#   Determines if the `epel-source` repository is managed.
+# @param epel_debuginfo_managed
+#   Determines if the `epel-debuginfo` repository is managed.
+# @param epel_testing_managed
+#   Determines if the `epel-testing` repository is managed.
+# @param epel_testing_source_managed
+#   Determines if the `epel-testing-source` repository is managed.
+# @param epel_testing_debuginfo_managed
+#   Determines if the `epel-testing-debuginfo` repository is managed.
+# @param epel_gpg_managed
+#   Detemines if the module manages the rpm-gpg key for EPEL.
 #
-# Requires:
-#   You should probably be on an Enterprise Linux variant. (Centos, RHEL,
-#   Scientific, Oracle, Ascendos, et al)
+# @example Basic Usage
+#   include epel
 #
-# Sample Usage:
-#  include epel
-#
+# @see https://fedoraproject.org/wiki/EPEL
 class epel (
   $epel_mirrorlist                        = $epel::params::epel_mirrorlist,
   $epel_baseurl                           = $epel::params::epel_baseurl,
@@ -17,7 +26,9 @@ class epel (
   $epel_proxy                             = $epel::params::epel_proxy,
   $epel_enabled                           = $epel::params::epel_enabled,
   $epel_gpgcheck                          = $epel::params::epel_gpgcheck,
-  $epel_managed                           = $epel::params::epel_managed,
+  $epel_repo_gpgcheck                     = $epel::params::epel_repo_gpgcheck,
+  $epel_metalink                          = $epel::params::epel_metalink,
+  Boolean $epel_managed                   = true,
   $epel_exclude                           = undef,
   $epel_includepkgs                       = undef,
   $epel_sslclientkey                      = undef,
@@ -28,7 +39,9 @@ class epel (
   $epel_testing_proxy                     = $epel::params::epel_testing_proxy,
   $epel_testing_enabled                   = $epel::params::epel_testing_enabled,
   $epel_testing_gpgcheck                  = $epel::params::epel_testing_gpgcheck,
-  $epel_testing_managed                   = $epel::params::epel_testing_managed,
+  $epel_testing_repo_gpgcheck             = $epel::params::epel_testing_repo_gpgcheck,
+  $epel_testing_metalink                  = $epel::params::epel_testing_metalink,
+  Boolean $epel_testing_managed           = true,
   $epel_testing_exclude                   = undef,
   $epel_testing_includepkgs               = undef,
   $epel_testing_sslclientkey              = undef,
@@ -39,7 +52,9 @@ class epel (
   $epel_source_proxy                      = $epel::params::epel_source_proxy,
   $epel_source_enabled                    = $epel::params::epel_source_enabled,
   $epel_source_gpgcheck                   = $epel::params::epel_source_gpgcheck,
-  $epel_source_managed                    = $epel::params::epel_source_managed,
+  $epel_source_repo_gpgcheck              = $epel::params::epel_source_repo_gpgcheck,
+  $epel_source_metalink                   = $epel::params::epel_source_metalink,
+  Boolean $epel_source_managed            = true,
   $epel_source_exclude                    = undef,
   $epel_source_includepkgs                = undef,
   $epel_source_sslclientkey               = undef,
@@ -50,7 +65,9 @@ class epel (
   $epel_debuginfo_proxy                   = $epel::params::epel_debuginfo_proxy,
   $epel_debuginfo_enabled                 = $epel::params::epel_debuginfo_enabled,
   $epel_debuginfo_gpgcheck                = $epel::params::epel_debuginfo_gpgcheck,
-  $epel_debuginfo_managed                 = $epel::params::epel_debuginfo_managed,
+  $epel_debuginfo_repo_gpgcheck           = $epel::params::epel_debuginfo_repo_gpgcheck,
+  $epel_debuginfo_metalink                = $epel::params::epel_debuginfo_metalink,
+  Boolean $epel_debuginfo_managed         = true,
   $epel_debuginfo_exclude                 = undef,
   $epel_debuginfo_includepkgs             = undef,
   $epel_debuginfo_sslclientkey            = undef,
@@ -61,7 +78,9 @@ class epel (
   $epel_testing_source_proxy              = $epel::params::epel_testing_source_proxy,
   $epel_testing_source_enabled            = $epel::params::epel_testing_source_enabled,
   $epel_testing_source_gpgcheck           = $epel::params::epel_testing_source_gpgcheck,
-  $epel_testing_source_managed            = $epel::params::epel_testing_source_managed,
+  $epel_testing_source_repo_gpgcheck      = $epel::params::epel_testing_source_repo_gpgcheck,
+  $epel_testing_source_metalink           = $epel::params::epel_testing_source_metalink,
+  Boolean $epel_testing_source_managed    = true,
   $epel_testing_source_exclude            = undef,
   $epel_testing_source_includepkgs        = undef,
   $epel_testing_source_sslclientkey       = undef,
@@ -72,15 +91,17 @@ class epel (
   $epel_testing_debuginfo_proxy           = $epel::params::epel_testing_debuginfo_proxy,
   $epel_testing_debuginfo_enabled         = $epel::params::epel_testing_debuginfo_enabled,
   $epel_testing_debuginfo_gpgcheck        = $epel::params::epel_testing_debuginfo_gpgcheck,
-  $epel_testing_debuginfo_managed         = $epel::params::epel_testing_debuginfo_managed,
+  $epel_testing_debuginfo_repo_gpgcheck   = $epel::params::epel_testing_debuginfo_repo_gpgcheck,
+  $epel_testing_debuginfo_metalink        = $epel::params::epel_testing_debuginfo_metalink,
+  Boolean $epel_testing_debuginfo_managed = true,
   $epel_testing_debuginfo_exclude         = undef,
   $epel_testing_debuginfo_includepkgs     = undef,
   $epel_testing_debuginfo_sslclientkey    = undef,
   $epel_testing_debuginfo_sslclientcert   = undef,
-  $epel_gpg_managed                       = $epel::params::epel_gpg_managed,
+  Boolean $epel_gpg_managed               = true,
   $os_maj_release                         = $epel::params::os_maj_release,
 ) inherits epel::params {
-  if "${::osfamily}" == 'RedHat' and "${::operatingsystem}" !~ /Fedora|Amazon/ { # lint:ignore:only_variable_string
+  if $facts['os']['family'] == 'RedHat' and $facts['os']['name'] != 'Fedora' {
   if $epel_testing_managed {
     yumrepo { 'epel-testing':
       # lint:ignore:selector_inside_resource
@@ -94,12 +115,18 @@ class epel (
       proxy          => $epel_testing_proxy,
       enabled        => $epel_testing_enabled,
       gpgcheck       => $epel_testing_gpgcheck,
+      repo_gpgcheck  => $epel_testing_repo_gpgcheck,
       gpgkey         => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-${os_maj_release}",
+      metalink       => $epel_testing_metalink,
       descr          => "Extra Packages for Enterprise Linux ${os_maj_release} - Testing - \$basearch",
       exclude        => $epel_testing_exclude,
       includepkgs    => $epel_testing_includepkgs,
       sslclientkey   => $epel_testing_sslclientkey,
       sslclientcert  => $epel_testing_sslclientcert,
+    }
+
+    if $epel_gpg_managed {
+      Epel::Rpm_gpg_key["EPEL-${os_maj_release}"] -> Yumrepo['epel-testing']
     }
   }
 
@@ -116,12 +143,18 @@ class epel (
       proxy          => $epel_testing_debuginfo_proxy,
       enabled        => $epel_testing_debuginfo_enabled,
       gpgcheck       => $epel_testing_debuginfo_gpgcheck,
+      repo_gpgcheck  => $epel_testing_debuginfo_repo_gpgcheck,
       gpgkey         => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-${os_maj_release}",
+      metalink       => $epel_testing_debuginfo_metalink,
       descr          => "Extra Packages for Enterprise Linux ${os_maj_release} - Testing - \$basearch - Debug",
       exclude        => $epel_testing_debuginfo_exclude,
       includepkgs    => $epel_testing_debuginfo_includepkgs,
       sslclientkey   => $epel_testing_debuginfo_sslclientkey,
       sslclientcert  => $epel_testing_debuginfo_sslclientcert,
+    }
+
+    if $epel_gpg_managed {
+      Epel::Rpm_gpg_key["EPEL-${os_maj_release}"] -> Yumrepo['epel-testing-debuginfo']
     }
   }
 
@@ -138,12 +171,18 @@ class epel (
       proxy          => $epel_testing_source_proxy,
       enabled        => $epel_testing_source_enabled,
       gpgcheck       => $epel_testing_source_gpgcheck,
+      repo_gpgcheck  => $epel_testing_source_repo_gpgcheck,
       gpgkey         => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-${os_maj_release}",
+      metalink       => $epel_testing_source_metalink,
       descr          => "Extra Packages for Enterprise Linux ${os_maj_release} - Testing - \$basearch - Source",
       exclude        => $epel_testing_source_exclude,
       includepkgs    => $epel_testing_source_includepkgs,
       sslclientkey   => $epel_testing_source_sslclientkey,
       sslclientcert  => $epel_testing_source_sslclientcert,
+    }
+
+    if $epel_gpg_managed {
+      Epel::Rpm_gpg_key["EPEL-${os_maj_release}"] -> Yumrepo['epel-testing-source']
     }
   }
 
@@ -160,12 +199,18 @@ class epel (
       proxy          => $epel_proxy,
       enabled        => $epel_enabled,
       gpgcheck       => $epel_gpgcheck,
+      repo_gpgcheck  => $epel_repo_gpgcheck,
       gpgkey         => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-${os_maj_release}",
+      metalink       => $epel_metalink,
       descr          => "Extra Packages for Enterprise Linux ${os_maj_release} - \$basearch",
       exclude        => $epel_exclude,
       includepkgs    => $epel_includepkgs,
       sslclientkey   => $epel_sslclientkey,
       sslclientcert  => $epel_sslclientcert,
+    }
+
+    if $epel_gpg_managed {
+      Epel::Rpm_gpg_key["EPEL-${os_maj_release}"] -> Yumrepo['epel']
     }
   }
 
@@ -182,12 +227,18 @@ class epel (
       proxy          => $epel_debuginfo_proxy,
       enabled        => $epel_debuginfo_enabled,
       gpgcheck       => $epel_debuginfo_gpgcheck,
+      repo_gpgcheck  => $epel_debuginfo_repo_gpgcheck,
       gpgkey         => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-${os_maj_release}",
       descr          => "Extra Packages for Enterprise Linux ${os_maj_release} - \$basearch - Debug",
+      metalink       => $epel_debuginfo_metalink,
       exclude        => $epel_debuginfo_exclude,
       includepkgs    => $epel_debuginfo_includepkgs,
       sslclientkey   => $epel_debuginfo_sslclientkey,
       sslclientcert  => $epel_debuginfo_sslclientcert,
+    }
+
+    if $epel_gpg_managed {
+      Epel::Rpm_gpg_key["EPEL-${os_maj_release}"] -> Yumrepo['epel-debuginfo']
     }
   }
 
@@ -204,24 +255,28 @@ class epel (
       proxy          => $epel_source_proxy,
       enabled        => $epel_source_enabled,
       gpgcheck       => $epel_source_gpgcheck,
+      repo_gpgcheck  => $epel_source_repo_gpgcheck,
       gpgkey         => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-${os_maj_release}",
       descr          => "Extra Packages for Enterprise Linux ${os_maj_release} - \$basearch - Source",
+      metalink       => $epel_source_metalink,
       exclude        => $epel_source_exclude,
       includepkgs    => $epel_source_includepkgs,
       sslclientkey   => $epel_source_sslclientkey,
       sslclientcert  => $epel_source_sslclientcert,
     }
+
+    if $epel_gpg_managed {
+      Epel::Rpm_gpg_key["EPEL-${os_maj_release}"] -> Yumrepo['epel-source']
+    }
   }
 
-  # ERB template used here to ensure file content is in the Puppet catalog;
-  # nothing is interpolated in these templates.
   if $epel_gpg_managed {
     file { "/etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-${os_maj_release}":
       ensure  => present,
       owner   => 'root',
       group   => 'root',
       mode    => '0644',
-      content => template("epel/RPM-GPG-KEY-EPEL-${os_maj_release}.erb"),
+      content => file("epel/RPM-GPG-KEY-EPEL-${os_maj_release}"),
     }
 
     epel::rpm_gpg_key{ "EPEL-${os_maj_release}":
@@ -229,14 +284,7 @@ class epel (
     }
   }
 
-  } elsif "${::osfamily}" == 'RedHat' and "${::operatingsystem}" == 'Amazon' { # lint:ignore:only_variable_string
-  if $epel_managed {
-    yumrepo { 'epel':
-      enabled  => $epel_enabled,
-      gpgcheck => $epel_gpgcheck,
-    }
-  }
   } else {
-    notice ("Your operating system ${::operatingsystem} will not have the EPEL repository applied")
+    notice ("Your operating system ${facts['os']['name']} will not have the EPEL repository applied")
   }
 }

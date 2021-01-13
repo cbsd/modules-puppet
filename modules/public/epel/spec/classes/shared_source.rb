@@ -6,7 +6,20 @@ shared_examples :epel_source do
       proxy:          'absent',
       failovermethod: 'priority',
       enabled:        '0',
-      gpgcheck:       '1'
+      gpgcheck:       '1',
+      repo_gpgcheck:  '0'
+    )
+  end
+end
+
+shared_examples_for :epel_source_8 do
+  include_context :epel_source
+
+  it do
+    is_expected.to contain_yumrepo('epel-source').with(
+      mirrorlist: 'https://mirrors.fedoraproject.org/metalink?repo=epel-source-8&arch=$basearch',
+      gpgkey:     'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8',
+      descr:      'Extra Packages for Enterprise Linux 8 - $basearch - Source'
     )
   end
 end

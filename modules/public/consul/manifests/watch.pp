@@ -16,7 +16,11 @@
 #   Name of an event to watch for.
 #
 # [*handler*]
-#   Full path to the script that will be excuted.
+#   Full path to the script that will be excuted. This parameter is deprecated
+#   in Consul 1.0.0, see https://github.com/hashicorp/consul/issues/3509.
+#
+# [*args*]
+#   Arguments to be `exec`ed for the watch.
 #
 # [*key*]
 #   Watch a specific key.
@@ -43,44 +47,47 @@
 # [*type*]
 #   Type of data to watch. (Like key, service, services, nodes)
 #
-define consul::watch(
-  $datacenter   = undef,
-  $ensure       = present,
-  $event_name   = undef,
-  $handler      = undef,
-  $key          = undef,
-  $keyprefix    = undef,
-  $passingonly  = undef,
-  $service      = undef,
-  $service_tag  = undef,
-  $state        = undef,
-  $token        = undef,
-  $type         = undef,
+define consul::watch (
+  $args                          = undef,
+  $datacenter                    = undef,
+  $ensure                        = present,
+  $event_name                    = undef,
+  $handler                       = undef,
+  $key                           = undef,
+  $keyprefix                     = undef,
+  Optional[Boolean] $passingonly = undef,
+  $service                       = undef,
+  $service_tag                   = undef,
+  $state                         = undef,
+  $token                         = undef,
+  $type                          = undef,
 ) {
+
   include consul
   $id = $title
 
   $basic_hash = {
     'type'       => $type,
+    'args'       => $args,
     'handler'    => $handler,
     'datacenter' => $datacenter,
     'token'      => $token,
   }
 
-  if (versioncmp($::consul::version, '0.4.0') < 0) {
-    fail ('Watches are only supported in Consul 0.4.0 and above')
+  if (versioncmp($consul::version, '0.4.0') < 0) {
+    fail('Watches are only supported in Consul 0.4.0 and above')
   }
 
-  if (! $handler ) {
-    fail ('All watch conditions must have a handler defined')
+  if (! $handler and ! $args) {
+    fail('All watch conditions must have a handler or args list defined')
+  }
+
+  if ($handler and $args) {
+    fail('Watch conditions cannot have both a handler and args list defined')
   }
 
   if (! $type ) {
-    fail ('All watch conditions must have a type defined')
-  }
-
-  if ($passingonly ) {
-    validate_bool($passingonly)
+    fail('All watch conditions must have a type defined')
   }
 
   case $type {
@@ -101,7 +108,7 @@ define consul::watch(
       }
     }
     'service': {
-      if (! service ){
+      if (! $service ){
         fail('service is required for watch type of [service]')
       }
       $type_hash = {
@@ -129,16 +136,19 @@ define consul::watch(
     }
   }
 
+  $merged_hash = merge($basic_hash, $type_hash)
+
   $watch_hash = {
-    watches => [delete_undef_values(merge($basic_hash, $type_hash))]
+    watches => [$merged_hash.filter |$key, $val| { $val =~ NotUndef }],
   }
 
-  File[$::consul::config_dir] ->
   file { "${consul::config_dir}/watch_${id}.json":
     ensure  => $ensure,
-    owner   => $::consul::user,
-    group   => $::consul::group,
-    mode    => $::consul::config_mode,
-    content => consul_sorted_json($watch_hash, $::consul::pretty_config, $::consul::pretty_config_indent),
-  } ~> Class['consul::reload_service']
+    owner   => $consul::user_real,
+    group   => $consul::group_real,
+    mode    => $consul::config_mode,
+    content => consul::sorted_json($watch_hash, $consul::pretty_config, $consul::pretty_config_indent),
+    notify  => Class['consul::reload_service'],
+  }
+
 }
