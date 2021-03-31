@@ -248,7 +248,7 @@ EOF
 
 # MAIN
 debug_form=0
-init $*
+. ${cbsdinit}
 
 readconf puppetd.conf
 

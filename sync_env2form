@@ -10,7 +10,7 @@ ADDHELP="module= specify module name. Default - scan formfile dir and apply to a
 . ${tools}
 . ${strings}
 
-init $*
+. ${cbsdinit}
 
 tmp=$( ${MKTEMP_CMD} )
 trap "${RM_CMD} -f ${tmp}" HUP INT ABRT BUS TERM EXIT
