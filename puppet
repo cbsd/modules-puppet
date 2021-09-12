@@ -258,7 +258,7 @@ case "${jname}" in
 	CBSDSYS|cbsdpuppet1)
 		;;
 	*)
-		. ${jrcconf}
+		. ${subrdir}/rcconf.subr
 		[ $? -eq 1 ] && err 1 "${N1_COLOR}${CBSD_APP}: no such jail: ${N2_COLOR}${jname}${N0_COLOR}"
 		;;
 esac
@@ -276,7 +276,7 @@ if [ -n "${module}" ]; then
 
 	mksitefile="${distmoduledir}/forms.d/${module}/site.pp"
 
-	. ${distdir}/imghelper.subr
+	. ${subrdir}/imghelper.subr
 
 	readconf helpers.conf
 

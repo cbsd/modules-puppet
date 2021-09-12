@@ -1,4 +1,8 @@
+# @summary custom provider to manage systemd user sessions/linger
+# @see https://www.freedesktop.org/software/systemd/man/loginctl.html
+# @see https://wiki.archlinux.org/title/Systemd/User
 Puppet::Type.type(:loginctl_user).provide(:ruby) do
+  desc 'custom provider to manage systemd user sessions/linger'
   commands loginctl: 'loginctl'
 
   def self.instances
@@ -17,9 +21,7 @@ Puppet::Type.type(:loginctl_user).provide(:ruby) do
 
   def self.prefetch(resources)
     instances.each do |prov|
-      if resources[prov.name]
-        resources[prov.name].provider = prov
-      end
+      resources[prov.name].provider = prov if resources[prov.name]
     end
   end
 

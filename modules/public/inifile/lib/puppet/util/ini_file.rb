@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require File.expand_path('../external_iterator', __FILE__)
 require File.expand_path('../ini_file/section', __FILE__)
 
@@ -64,7 +66,7 @@ module Puppet::Util
       @sections_hash[section_name].get_value(setting) if @sections_hash.key?(section_name)
     end
 
-    def set_value(*args) # rubocop:disable Style/AccessorMethodName : Recomended alternative is a common value name
+    def set_value(*args)
       case args.size
       when 1
         section_name = args[0]
@@ -168,7 +170,7 @@ module Puppet::Util
               # if they are at the end of a section, we can insert
               # any new settings *before* the final chunk of whitespace
               # lines.
-              if line =~ %r{^\s*$}
+              if line.match?(%r{^\s*$})
                 whitespace_buffer << line
               else
                 # If we get here, we've found a non-whitespace line.

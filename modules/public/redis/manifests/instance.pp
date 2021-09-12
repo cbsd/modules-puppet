@@ -65,7 +65,8 @@
 # @param log_dir_mode
 #   Adjust mode for directory containing log files.
 # @param log_file
-#   Specify file where to write log entries.
+#   Specify file where to write log entries. Relative paths will be prepended
+#   with log_dir but absolute paths are also accepted.
 # @param log_level
 #   Specify the server verbosity level.
 # @param masterauth
@@ -94,6 +95,8 @@
 #   Whether protected mode is enabled or not.  Only applicable when no bind is set.
 # @param rdbcompression
 #   Enable/disable compression of string objects using LZF when dumping.
+# @param rename_commands
+#   A list of Redis commands to rename or disable for security reasons
 # @param repl_backlog_size
 #   The replication backlog size
 # @param repl_backlog_ttl
@@ -119,10 +122,6 @@
 #   Specify if the server should be running.
 # @param service_group
 #   Specify which group to run as.
-# @param service_hasrestart
-#   Does the init script support restart?
-# @param service_hasstatus
-#   Does the init script support status?
 # @param service_user
 #   Specify which user to run as.
 # @param set_max_intset_entries
@@ -164,6 +163,9 @@
 #   Close the connection after a client is idle for N seconds (0 to disable).
 # @param ulimit
 #   Limit the use of system-wide resources.
+# @param ulimit_managed
+#   Defines wheter the max number of open files for the
+#   systemd service unit is explicitly managed.
 # @param unixsocket
 #   Define unix socket path
 # @param unixsocketperm
@@ -226,21 +228,20 @@ define redis::instance (
   Stdlib::Absolutepath $log_dir                                  = $redis::log_dir,
   Stdlib::Filemode $log_dir_mode                                 = $redis::log_dir_mode,
   Redis::LogLevel $log_level                                     = $redis::log_level,
-  String[1] $minimum_version                                     = $redis::minimum_version,
-  Optional[String[1]] $masterauth                                = $redis::masterauth,
+  Optional[Variant[String[1], Sensitive[String[1]]]] $masterauth = $redis::masterauth,
   Integer[1] $maxclients                                         = $redis::maxclients,
-  $maxmemory                                                     = $redis::maxmemory,
-  $maxmemory_policy                                              = $redis::maxmemory_policy,
-  $maxmemory_samples                                             = $redis::maxmemory_samples,
+  Optional[Variant[Integer, String]] $maxmemory                  = $redis::maxmemory,
+  Optional[String] $maxmemory_policy                             = $redis::maxmemory_policy,
+  Optional[Variant[Integer, String]] $maxmemory_samples          = $redis::maxmemory_samples,
   Integer[0] $min_slaves_max_lag                                 = $redis::min_slaves_max_lag,
   Integer[0] $min_slaves_to_write                                = $redis::min_slaves_to_write,
   Boolean $no_appendfsync_on_rewrite                             = $redis::no_appendfsync_on_rewrite,
   Optional[String[1]] $notify_keyspace_events                    = $redis::notify_keyspace_events,
   Boolean $managed_by_cluster_manager                            = $redis::managed_by_cluster_manager,
-  String[1] $package_ensure                                      = $redis::package_ensure,
   Stdlib::Port $port                                             = $redis::port,
   Boolean $protected_mode                                        = $redis::protected_mode,
   Boolean $rdbcompression                                        = $redis::rdbcompression,
+  Hash[String,String] $rename_commands                           = $redis::rename_commands,
   String[1] $repl_backlog_size                                   = $redis::repl_backlog_size,
   Integer[0] $repl_backlog_ttl                                   = $redis::repl_backlog_ttl,
   Boolean $repl_disable_tcp_nodelay                              = $redis::repl_disable_tcp_nodelay,
@@ -255,7 +256,7 @@ define redis::instance (
   Boolean $slave_read_only                                       = $redis::slave_read_only,
   Boolean $slave_serve_stale_data                                = $redis::slave_serve_stale_data,
   Optional[String[1]] $slaveof                                   = $redis::slaveof,
-  Integer[0] $slowlog_log_slower_than                            = $redis::slowlog_log_slower_than,
+  Integer[-1] $slowlog_log_slower_than                           = $redis::slowlog_log_slower_than,
   Integer[0] $slowlog_max_len                                    = $redis::slowlog_max_len,
   Boolean $stop_writes_on_bgsave_error                           = $redis::stop_writes_on_bgsave_error,
   Boolean $syslog_enabled                                        = $redis::syslog_enabled,
@@ -265,6 +266,7 @@ define redis::instance (
   Integer[0] $timeout                                            = $redis::timeout,
   Variant[Stdlib::Filemode , Enum['']] $unixsocketperm           = $redis::unixsocketperm,
   Integer[0] $ulimit                                             = $redis::ulimit,
+  Boolean $ulimit_managed                                        = $redis::ulimit_managed,
   Stdlib::Filemode $workdir_mode                                 = $redis::workdir_mode,
   Integer[0] $zset_max_ziplist_entries                           = $redis::zset_max_ziplist_entries,
   Integer[0] $zset_max_ziplist_value                             = $redis::zset_max_ziplist_value,
@@ -278,10 +280,8 @@ define redis::instance (
   Stdlib::Ensure::Service $service_ensure                        = $redis::service_ensure,
   Boolean $service_enable                                        = $redis::service_enable,
   String[1] $service_group                                       = $redis::service_group,
-  Boolean $service_hasrestart                                    = $redis::service_hasrestart,
-  Boolean $service_hasstatus                                     = $redis::service_hasstatus,
   Boolean $manage_service_file                                   = true,
-  Optional[Stdlib::Absolutepath] $log_file                       = undef,
+  String $log_file                                               = "redis-server-${name}.log",
   Stdlib::Absolutepath $pid_file                                 = "/var/run/redis/redis-server-${name}.pid",
   Variant[Stdlib::Absolutepath, Enum['']] $unixsocket            = "/var/run/redis/redis-server-${name}.sock",
   Stdlib::Absolutepath $workdir                                  = "${redis::workdir}/redis-server-${name}",
@@ -303,11 +303,6 @@ define redis::instance (
     }
   }
 
-  $_real_log_file = $log_file ? {
-    undef   => "${log_dir}/redis-server-${name}.log",
-    default => $log_file,
-  }
-
   if $workdir != $redis::workdir {
     file { $workdir:
       ensure => directory,
@@ -318,66 +313,123 @@ define redis::instance (
   }
 
   if $manage_service_file {
-    $service_provider_lookup = pick(getvar('service_provider'), false)
+    if $title != 'default' {
+      $real_service_ensure = $service_ensure == 'running'
+      $real_service_enable = $service_enable
 
-    if $service_provider_lookup == 'systemd' {
-      file { "/etc/systemd/system/${service_name}.service":
-        ensure  => file,
-        owner   => 'root',
-        group   => 'root',
-        mode    => '0644',
-        content => template('redis/service_templates/redis.service.erb'),
-      }
-
-      # Only necessary for Puppet < 6.1.0,
-      # See https://github.com/puppetlabs/puppet/commit/f8d5c60ddb130c6429ff12736bfdb4ae669a9fd4
-      if versioncmp($facts['puppetversion'],'6.1.0') < 0 {
-        include systemd::systemctl::daemon_reload
-        File["/etc/systemd/system/${service_name}.service"] ~> Class['systemd::systemctl::daemon_reload']
-      }
-
-      if $title != 'default' {
-        service { $service_name:
-          ensure     => $service_ensure,
-          enable     => $service_enable,
-          hasrestart => $service_hasrestart,
-          hasstatus  => $service_hasstatus,
-          subscribe  => [
-            File["/etc/systemd/system/${service_name}.service"],
-            Exec["cp -p ${redis_file_name_orig} ${redis_file_name}"],
-          ],
-        }
-      }
+      Exec["cp -p ${redis_file_name_orig} ${redis_file_name}"] ~> Service["${service_name}.service"]
     } else {
-      file { "/etc/init.d/${service_name}":
-        ensure  => file,
-        mode    => '0755',
-        content => template("redis/service_templates/redis.${facts['os']['family']}.erb"),
-      }
+      $real_service_ensure = undef
+      $real_service_enable = undef
+    }
 
-      if $title != 'default' {
-        service { $service_name:
-          ensure     => $service_ensure,
-          enable     => $service_enable,
-          hasrestart => $service_hasrestart,
-          hasstatus  => $service_hasstatus,
-          subscribe  => [
-            File["/etc/init.d/${service_name}"],
-            Exec["cp -p ${redis_file_name_orig} ${redis_file_name}"],
-          ],
-        }
+    systemd::unit_file { "${service_name}.service":
+      ensure  => 'present',
+      active  => $real_service_ensure,
+      enable  => $real_service_enable,
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0644',
+      content => template('redis/service_templates/redis.service.erb'),
+    }
+  } else {
+    if $ulimit_managed {
+      systemd::service_limits { "${service_name}.service":
+        limits          => {
+          'LimitNOFILE' => $ulimit,
+        },
+        restart_service => false,
       }
     }
   }
 
-  File {
-    owner  => $config_owner,
-    group  => $config_group,
-    mode   => $config_file_mode,
+  $_real_log_file = $log_file ? {
+    Stdlib::Absolutepath => $log_file,
+    default              => "${log_dir}/${log_file}",
   }
+
+  $bind_arr = [$bind].flatten
 
   file { $redis_file_name_orig:
     ensure  => file,
+    owner   => $config_owner,
+    group   => $config_group,
+    mode    => $config_file_mode,
+    content => epp(
+      $conf_template,
+      {
+        daemonize                     => $daemonize,
+        pid_file                      => $pid_file,
+        protected_mode                => $protected_mode,
+        port                          => $port,
+        tcp_backlog                   => $tcp_backlog,
+        bind_arr                      => $bind_arr,
+        unixsocket                    => $unixsocket,
+        unixsocketperm                => $unixsocketperm,
+        timeout                       => $timeout,
+        tcp_keepalive                 => $tcp_keepalive,
+        log_level                     => $log_level,
+        log_file                      => $_real_log_file,
+        syslog_enabled                => $syslog_enabled,
+        syslog_facility               => $syslog_facility,
+        databases                     => $databases,
+        save_db_to_disk               => $save_db_to_disk,
+        save_db_to_disk_interval      => $save_db_to_disk_interval,
+        stop_writes_on_bgsave_error   => $stop_writes_on_bgsave_error,
+        rdbcompression                => $rdbcompression,
+        dbfilename                    => $dbfilename,
+        workdir                       => $workdir,
+        slaveof                       => $slaveof,
+        masterauth                    => $masterauth,
+        slave_serve_stale_data        => $slave_serve_stale_data,
+        slave_read_only               => $slave_read_only,
+        repl_ping_slave_period        => $repl_ping_slave_period,
+        repl_timeout                  => $repl_timeout,
+        repl_disable_tcp_nodelay      => $repl_disable_tcp_nodelay,
+        repl_backlog_size             => $repl_backlog_size,
+        repl_backlog_ttl              => $repl_backlog_ttl,
+        slave_priority                => $slave_priority,
+        min_slaves_to_write           => $min_slaves_to_write,
+        min_slaves_max_lag            => $min_slaves_max_lag,
+        requirepass                   => $requirepass,
+        rename_commands               => $rename_commands,
+        maxclients                    => $maxclients,
+        maxmemory                     => $maxmemory,
+        maxmemory_policy              => $maxmemory_policy,
+        maxmemory_samples             => $maxmemory_samples,
+        appendonly                    => $appendonly,
+        appendfilename                => $appendfilename,
+        appendfsync                   => $appendfsync,
+        no_appendfsync_on_rewrite     => $no_appendfsync_on_rewrite,
+        auto_aof_rewrite_percentage   => $auto_aof_rewrite_percentage,
+        auto_aof_rewrite_min_size     => $auto_aof_rewrite_min_size,
+        aof_load_truncated            => $aof_load_truncated,
+        slowlog_log_slower_than       => $slowlog_log_slower_than,
+        slowlog_max_len               => $slowlog_max_len,
+        latency_monitor_threshold     => $latency_monitor_threshold,
+        notify_keyspace_events        => $notify_keyspace_events,
+        hash_max_ziplist_entries      => $hash_max_ziplist_entries,
+        hash_max_ziplist_value        => $hash_max_ziplist_value,
+        list_max_ziplist_entries      => $list_max_ziplist_entries,
+        list_max_ziplist_value        => $list_max_ziplist_value,
+        set_max_intset_entries        => $set_max_intset_entries,
+        zset_max_ziplist_entries      => $zset_max_ziplist_entries,
+        zset_max_ziplist_value        => $zset_max_ziplist_value,
+        hll_sparse_max_bytes          => $hll_sparse_max_bytes,
+        activerehashing               => $activerehashing,
+        output_buffer_limit_slave     => $output_buffer_limit_slave,
+        output_buffer_limit_pubsub    => $output_buffer_limit_pubsub,
+        hz                            => $hz,
+        aof_rewrite_incremental_fsync => $aof_rewrite_incremental_fsync,
+        cluster_enabled               => $cluster_enabled,
+        cluster_config_file           => $cluster_config_file,
+        cluster_node_timeout          => $cluster_node_timeout,
+        cluster_slave_validity_factor => $cluster_slave_validity_factor,
+        cluster_require_full_coverage => $cluster_require_full_coverage,
+        cluster_migration_barrier     => $cluster_migration_barrier,
+        extra_config_file             => $extra_config_file,
+      }
+    ),
   }
 
   exec { "cp -p ${redis_file_name_orig} ${redis_file_name}":
@@ -385,21 +437,4 @@ define redis::instance (
     subscribe   => File[$redis_file_name_orig],
     refreshonly => true,
   }
-
-  $bind_arr = [$bind].flatten
-
-  if $package_ensure =~ /^([0-9]+:)?[0-9]+\.[0-9]/ {
-    if ':' in $package_ensure {
-      $_redis_version_real = split($package_ensure, ':')
-      $redis_version_real = $_redis_version_real[1]
-    } else {
-      $redis_version_real = $package_ensure
-    }
-  } else {
-    $redis_version_real = pick(getvar('redis_server_version'), $minimum_version)
-  }
-
-  $supports_protected_mode = !$redis_version_real or versioncmp($redis_version_real, '3.2.0') >= 0
-
-  File[$redis_file_name_orig] { content => template($conf_template) }
 }

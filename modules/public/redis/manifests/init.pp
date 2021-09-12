@@ -82,7 +82,8 @@
 # @param log_dir_mode
 #   Adjust mode for directory containing log files.
 # @param log_file
-#   Specify file where to write log entries.
+#   Specify file where to write log entries. Relative paths will be prepended
+#   with log_dir but absolute paths are also accepted.
 # @param log_level
 #   Specify the server verbosity level.
 # @param manage_repo
@@ -125,6 +126,8 @@
 #   Specify upstream (Ubuntu) PPA entry.
 # @param rdbcompression
 #   Enable/disable compression of string objects using LZF when dumping.
+# @param rename_commands
+#   A list of Redis commands to rename or disable for security reasons
 # @param repl_backlog_size
 #   The replication backlog size
 # @param repl_backlog_ttl
@@ -149,14 +152,8 @@
 #   Specify if the server should be running.
 # @param service_group
 #   Specify which group to run as.
-# @param service_hasrestart
-#   Does the init script support restart?
-# @param service_hasstatus
-#   Does the init script support status?
 # @param service_name
 #   Specify the service name for Init or Systemd.
-# @param service_provider
-#   Specify the service provider to use
 # @param service_user
 #   Specify which user to run as.
 # @param set_max_intset_entries
@@ -198,6 +195,9 @@
 #   Close the connection after a client is idle for N seconds (0 to disable).
 # @param ulimit
 #   Limit the use of system-wide resources.
+# @param ulimit_managed
+#   Defines wheter the max number of open files for the
+#   systemd service unit is explicitly managed.
 # @param unixsocket
 #   Define unix socket path
 # @param unixsocketperm
@@ -242,7 +242,7 @@ class redis (
   Variant[Stdlib::IP::Address, Array[Stdlib::IP::Address]] $bind = ['127.0.0.1'],
   String[1] $output_buffer_limit_slave                           = '256mb 64mb 60',
   String[1] $output_buffer_limit_pubsub                          = '32mb 8mb 60',
-  String[1] $conf_template                                       = 'redis/redis.conf.erb',
+  String[1] $conf_template                                       = 'redis/redis.conf.epp',
   Stdlib::Absolutepath $config_dir                               = $redis::params::config_dir,
   Stdlib::Filemode $config_dir_mode                              = $redis::params::config_dir_mode,
   Stdlib::Absolutepath $config_file                              = $redis::params::config_file,
@@ -262,14 +262,14 @@ class redis (
   Integer[0] $latency_monitor_threshold                          = 0,
   Integer[0] $list_max_ziplist_entries                           = 512,
   Integer[0] $list_max_ziplist_value                             = 64,
-  Stdlib::Absolutepath $log_dir                                  = '/var/log/redis',
+  Stdlib::Absolutepath $log_dir                                  = $redis::params::log_dir,
   Stdlib::Filemode $log_dir_mode                                 = $redis::params::log_dir_mode,
-  Stdlib::Absolutepath $log_file                                 = '/var/log/redis/redis.log',
+  String $log_file                                               = 'redis.log',
   Redis::LogLevel $log_level                                     = 'notice',
   Boolean $manage_service_file                                   = false,
   Boolean $manage_package                                        = true,
   Boolean $manage_repo                                           = false,
-  Optional[String[1]] $masterauth                                = undef,
+  Optional[Variant[String[1], Sensitive[String[1]]]] $masterauth = undef,
   Integer[1] $maxclients                                         = 10000,
   $maxmemory                                                     = undef,
   $maxmemory_policy                                              = undef,
@@ -280,13 +280,14 @@ class redis (
   Optional[String[1]] $notify_keyspace_events                    = undef,
   Boolean $notify_service                                        = true,
   Boolean $managed_by_cluster_manager                            = false,
-  String[1] $package_ensure                                      = 'present',
+  String[1] $package_ensure                                      = 'installed',
   String[1] $package_name                                        = $redis::params::package_name,
   Stdlib::Absolutepath $pid_file                                 = $redis::params::pid_file,
   Stdlib::Port $port                                             = 6379,
   Boolean $protected_mode                                        = true,
   Optional[String] $ppa_repo                                     = $redis::params::ppa_repo,
   Boolean $rdbcompression                                        = true,
+  Hash[String,String] $rename_commands                           = {},
   String[1] $repl_backlog_size                                   = '1mb',
   Integer[0] $repl_backlog_ttl                                   = 3600,
   Boolean $repl_disable_tcp_nodelay                              = false,
@@ -298,18 +299,15 @@ class redis (
   Boolean $service_enable                                        = true,
   Stdlib::Ensure::Service $service_ensure                        = 'running',
   String[1] $service_group                                       = 'redis',
-  Boolean $service_hasrestart                                    = true,
-  Boolean $service_hasstatus                                     = true,
   Boolean $service_manage                                        = true,
   String[1] $service_name                                        = $redis::params::service_name,
-  Optional[String] $service_provider                             = undef,
   String[1] $service_user                                        = 'redis',
   Integer[0] $set_max_intset_entries                             = 512,
   Integer[0] $slave_priority                                     = 100,
   Boolean $slave_read_only                                       = true,
   Boolean $slave_serve_stale_data                                = true,
   Optional[String[1]] $slaveof                                   = undef,
-  Integer[0] $slowlog_log_slower_than                            = 10000,
+  Integer[-1] $slowlog_log_slower_than                           = 10000,
   Integer[0] $slowlog_max_len                                    = 1024,
   Boolean $stop_writes_on_bgsave_error                           = true,
   Boolean $syslog_enabled                                        = false,
@@ -320,6 +318,7 @@ class redis (
   Variant[Stdlib::Absolutepath, Enum['']] $unixsocket            = '/var/run/redis/redis.sock',
   Variant[Stdlib::Filemode, Enum['']] $unixsocketperm            = '0755',
   Integer[0] $ulimit                                             = 65536,
+  Boolean $ulimit_managed                                        = true,
   Stdlib::Absolutepath $workdir                                  = $redis::params::workdir,
   Stdlib::Filemode $workdir_mode                                 = '0750',
   Integer[0] $zset_max_ziplist_entries                           = 128,

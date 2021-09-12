@@ -13,12 +13,11 @@
 class systemd::tmpfiles (
   Array[Enum['create','clean','remove']] $operations = ['create']
 ) {
-
   $_ops = join(prefix($operations, '--'), ' ')
 
   exec { 'systemd-tmpfiles':
     command     => "systemd-tmpfiles ${_ops}",
     refreshonly => true,
-    path        => $::path,
+    path        => $facts['path'],
   }
 }

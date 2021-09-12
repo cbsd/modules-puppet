@@ -2,6 +2,74 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v8.0.0](https://github.com/puppetlabs/puppetlabs-stdlib/tree/v8.0.0) (2021-08-24)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-stdlib/compare/v7.1.0...v8.0.0)
+
+### Changed
+
+- Flip installed and present in Function ensure\_packages [\#1196](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1196) ([cocker-cc](https://github.com/cocker-cc))
+
+### Added
+
+- New function to\_python\(\) / to\_ruby\(\) [\#1200](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1200) ([smortex](https://github.com/smortex))
+- pdksync - \(IAC-1709\) - Add Support for Debian 11 [\#1199](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1199) ([david22swan](https://github.com/david22swan))
+- Stdlib::Http::Method: Add new type for http methods [\#1192](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1192) ([b4ldr](https://github.com/b4ldr))
+
+### Fixed
+
+- \(MODULES-11099\) Make merge parameter data types actually backwards compatible [\#1191](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1191) ([SimonPe](https://github.com/SimonPe))
+
+## [v7.1.0](https://github.com/puppetlabs/puppetlabs-stdlib/tree/v7.1.0) (2021-05-17)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-stdlib/compare/v7.0.1...v7.1.0)
+
+### Added
+
+- pw\_hash: add support for bcrypt variants [\#1173](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1173) ([kjetilho](https://github.com/kjetilho))
+
+## [v7.0.1](https://github.com/puppetlabs/puppetlabs-stdlib/tree/v7.0.1) (2021-04-12)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-stdlib/compare/v7.0.0...v7.0.1)
+
+### Fixed
+
+- Fix typo in validate\_ipv6\_address function [\#1176](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1176) ([nbarrientos](https://github.com/nbarrientos))
+
+## [v7.0.0](https://github.com/puppetlabs/puppetlabs-stdlib/tree/v7.0.0) (2021-03-01)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-stdlib/compare/v6.6.0...v7.0.0)
+
+### Changed
+
+- pdksync - Remove Puppet 5 from testing and bump minimal version to 6.0.0 [\#1164](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1164) ([carabasdaniel](https://github.com/carabasdaniel))
+
+### Added
+
+- Stdlib::Email type [\#1160](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1160) ([b4ldr](https://github.com/b4ldr))
+
+### Fixed
+
+- \(bugfix\) Setting stricter email validation [\#1163](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1163) ([pmcmaw](https://github.com/pmcmaw))
+- \(IAC-1414\) Throw error in range\(\) function when step size invalid [\#1161](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1161) ([sanfrancrisko](https://github.com/sanfrancrisko))
+
+## [v6.6.0](https://github.com/puppetlabs/puppetlabs-stdlib/tree/v6.6.0) (2021-02-02)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-stdlib/compare/v6.5.0...v6.6.0)
+
+### Added
+
+- stdlib::ensure: new fuction to cast ensure values [\#1150](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1150) ([b4ldr](https://github.com/b4ldr))
+- \(feat\) Add support for Puppet 7 [\#1144](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1144) ([daianamezdrea](https://github.com/daianamezdrea))
+- Allow options injection for to\_yaml [\#1137](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1137) ([baurmatt](https://github.com/baurmatt))
+- Allow start/end checks on empty strings [\#1135](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1135) ([jvrsantacruz](https://github.com/jvrsantacruz))
+- Stdlib::HttpStatus: add type for HTTP status codes as per rfc2616 [\#1132](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1132) ([b4ldr](https://github.com/b4ldr))
+
+### Fixed
+
+- \(IAC-1375\) fix unit tests for pe\_version fact, when using later facte… [\#1155](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1155) ([tphoney](https://github.com/tphoney))
+- seeded\_rand: update funtion to ensure it returns an int not String [\#1139](https://github.com/puppetlabs/puppetlabs-stdlib/pull/1139) ([b4ldr](https://github.com/b4ldr))
+
 ## [v6.5.0](https://github.com/puppetlabs/puppetlabs-stdlib/tree/v6.5.0) (2020-09-30)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-stdlib/compare/v6.4.0...v6.5.0)

@@ -4,55 +4,26 @@
 #
 # @see systemd.unit(5)
 #
-# @attr name [Pattern['^[^/]+\.conf$']]
-#   The target unit file to create
+# @param unit the The target unit file to create, the value will be set to the `filename` parameter as well
+# @param filename The target unit file to create
+# @param ensure the state of this dropin file
+# @param path The main systemd configuration path
+# @param selinux_ignore_defaults If Puppet should ignore the default SELinux labels.
+# @param content The full content of the unit file (Mutually exclusive with `$source`)
+# @param source The `File` resource compatible `source` Mutually exclusive with ``$content``
+# @param target If set, will force the file to be a symlink to the given target (Mutually exclusive with both `$source` and `$content`
+# @param owner The owner to set on the dropin file
+# @param group The group to set on the dropin file
+# @param mode The mode to set on the dropin file
+# @param show_diff Whether to show the diff when updating dropin file
+# @param notify_service Notify a service for the unit, if it exists
 #
-# @attr path
-#   The main systemd configuration path
-#
-# @attr selinux_ignore_defaults
-#   If Puppet should ignore the default SELinux labels.
-#
-# @attr content
-#   The full content of the unit file
-#
-#   * Mutually exclusive with ``$source``
-#
-# @attr source
-#   The ``File`` resource compatible ``source``
-#
-#   * Mutually exclusive with ``$content``
-#
-# @attr target
-#   If set, will force the file to be a symlink to the given target
-#
-#   * Mutually exclusive with both ``$source`` and ``$content``
-#
-# @attr owner
-#   The owner to set on the dropin file
-#
-# @attr group
-#   The group to set on the dropin file
-#
-# @attr mode
-#   The mode to set on the dropin file
-#
-# @attr show_diff
-#   Whether to show the diff when updating dropin file
-#
-# @attr daemon_reload
-#   Set to `lazy` to defer execution of a systemctl daemon reload.
-#   Minimizes the number of times the daemon is reloaded.
-#   Set to `eager` to immediately reload after the dropin file is updated.
-#   Useful if the daemon needs to be reloaded before a service is refreshed.
-#   May cause multiple daemon reloads.
-#
-define systemd::dropin_file(
+define systemd::dropin_file (
   Systemd::Unit                               $unit,
   Systemd::Dropin                             $filename                = $name,
   Enum['present', 'absent', 'file']           $ensure                  = 'present',
   Stdlib::Absolutepath                        $path                    = '/etc/systemd/system',
-  Optional[Boolean]                           $selinux_ignore_defaults = false,
+  Boolean                                     $selinux_ignore_defaults = false,
   Optional[Variant[String,Sensitive[String]]] $content                 = undef,
   Optional[String]                            $source                  = undef,
   Optional[Stdlib::Absolutepath]              $target                  = undef,
@@ -60,7 +31,7 @@ define systemd::dropin_file(
   String                                      $group                   = 'root',
   String                                      $mode                    = '0444',
   Boolean                                     $show_diff               = true,
-  Enum['lazy', 'eager']                       $daemon_reload           = 'lazy',
+  Boolean                                     $notify_service          = false,
 ) {
   include systemd
 
@@ -73,18 +44,20 @@ define systemd::dropin_file(
     }
   }
 
+  $full_filename = "${path}/${unit}.d/${filename}"
+
   if $ensure != 'absent' {
-    ensure_resource('file', "${path}/${unit}.d", {
-      ensure                  => directory,
-      owner                   => 'root',
-      group                   => 'root',
-      recurse                 => $::systemd::purge_dropin_dirs,
-      purge                   => $::systemd::purge_dropin_dirs,
-      selinux_ignore_defaults => $selinux_ignore_defaults,
+    ensure_resource('file', dirname($full_filename), {
+        ensure                  => directory,
+        owner                   => 'root',
+        group                   => 'root',
+        recurse                 => $systemd::purge_dropin_dirs,
+        purge                   => $systemd::purge_dropin_dirs,
+        selinux_ignore_defaults => $selinux_ignore_defaults,
     })
   }
 
-  file { "${path}/${unit}.d/${filename}":
+  file { $full_filename:
     ensure                  => $_ensure,
     content                 => $content,
     source                  => $source,
@@ -96,15 +69,11 @@ define systemd::dropin_file(
     show_diff               => $show_diff,
   }
 
-  if $daemon_reload == 'lazy' {
-    File["${path}/${unit}.d/${filename}"] ~> Class['systemd::systemctl::daemon_reload']
-  } else {
-    File["${path}/${unit}.d/${filename}"] ~> Exec["${unit}-systemctl-daemon-reload"]
-
-    exec { "${unit}-systemctl-daemon-reload":
-      command     => 'systemctl daemon-reload',
-      refreshonly => true,
-      path        => $facts['path'],
+  if $notify_service {
+    File[$full_filename] ~> Service <| title == $unit or name == $unit |>
+    if $unit =~ /\.service$/ {
+      $short_service_name = regsubst($unit, /\.service$/, '')
+      File[$full_filename] ~> Service <| title == $short_service_name or name == $short_service_name |>
     }
   }
 }

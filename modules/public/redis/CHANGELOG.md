@@ -4,6 +4,95 @@ All notable changes to this project will be documented in this file.
 Each new release typically also includes the latest modulesync defaults.
 These should not affect the functionality of the module.
 
+## [v8.1.1](https://github.com/voxpupuli/puppet-redis/tree/v8.1.1) (2021-08-30)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-redis/compare/v8.1.0...v8.1.1)
+
+**Fixed bugs:**
+
+- Honor redis::sentinel::package\_ensure [\#413](https://github.com/voxpupuli/puppet-redis/pull/413) ([kajinamit](https://github.com/kajinamit))
+
+## [v8.1.0](https://github.com/voxpupuli/puppet-redis/tree/v8.1.0) (2021-08-29)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-redis/compare/v8.0.0...v8.1.0)
+
+**Implemented enhancements:**
+
+- Ability to disable slowlog\_log\_slower\_than [\#404](https://github.com/voxpupuli/puppet-redis/issues/404)
+- Allow disable to disable slow log [\#414](https://github.com/voxpupuli/puppet-redis/pull/414) ([root-expert](https://github.com/root-expert))
+- Use Puppet-Datatype Sensitive for $masterauth and $auth\_pass [\#403](https://github.com/voxpupuli/puppet-redis/pull/403) ([cocker-cc](https://github.com/cocker-cc))
+
+**Merged pull requests:**
+
+- Allow stdlib 8.0.0 [\#411](https://github.com/voxpupuli/puppet-redis/pull/411) ([smortex](https://github.com/smortex))
+
+## [v8.0.0](https://github.com/voxpupuli/puppet-redis/tree/v8.0.0) (2021-07-24)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-redis/compare/v7.0.0...v8.0.0)
+
+**Breaking changes:**
+
+- Use EPP for Configfile [\#407](https://github.com/voxpupuli/puppet-redis/pull/407) ([cocker-cc](https://github.com/cocker-cc))
+- Drop Ubuntu 16.04 support [\#406](https://github.com/voxpupuli/puppet-redis/pull/406) ([ekohl](https://github.com/ekohl))
+- Drop Puppet 5 support [\#392](https://github.com/voxpupuli/puppet-redis/pull/392) ([ekohl](https://github.com/ekohl))
+
+**Implemented enhancements:**
+
+- Adding ability to secure Sentinel [\#399](https://github.com/voxpupuli/puppet-redis/pull/399) ([markasammut](https://github.com/markasammut))
+
+**Fixed bugs:**
+
+- set correct redis bin path in systemd for instances when using SCL [\#405](https://github.com/voxpupuli/puppet-redis/pull/405) ([alexskr](https://github.com/alexskr))
+
+**Closed issues:**
+
+- Missing ability to secure sentinel? [\#305](https://github.com/voxpupuli/puppet-redis/issues/305)
+
+**Merged pull requests:**
+
+- switch from camptocamp/systemd to voxpupuli/systemd [\#408](https://github.com/voxpupuli/puppet-redis/pull/408) ([bastelfreak](https://github.com/bastelfreak))
+
+## [v7.0.0](https://github.com/voxpupuli/puppet-redis/tree/v7.0.0) (2021-04-28)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-redis/compare/v6.1.0...v7.0.0)
+
+**Breaking changes:**
+
+- Remove support for THP in Redis module - recommend forge module [\#385](https://github.com/voxpupuli/puppet-redis/pull/385) ([dom-nie](https://github.com/dom-nie))
+- Drop sysinit /CentOS 6 support [\#382](https://github.com/voxpupuli/puppet-redis/pull/382) ([ekohl](https://github.com/ekohl))
+- Make augeasproviders\_sysctl a soft dependency [\#377](https://github.com/voxpupuli/puppet-redis/pull/377) ([ekohl](https://github.com/ekohl))
+- Move package parameters to init.pp [\#374](https://github.com/voxpupuli/puppet-redis/pull/374) ([ekohl](https://github.com/ekohl))
+
+**Implemented enhancements:**
+
+- Declare Puppet 7 support [\#400](https://github.com/voxpupuli/puppet-redis/pull/400) ([ekohl](https://github.com/ekohl))
+- Set ulimit via systemd using camptocamp/systemd [\#396](https://github.com/voxpupuli/puppet-redis/pull/396) ([ekohl](https://github.com/ekohl))
+- puppetlabs/stdlib: Allow 7.x [\#394](https://github.com/voxpupuli/puppet-redis/pull/394) ([bastelfreak](https://github.com/bastelfreak))
+- Allow relative paths for $log\_file [\#387](https://github.com/voxpupuli/puppet-redis/pull/387) ([ekohl](https://github.com/ekohl))
+- Add support for rename-command in redis.conf [\#383](https://github.com/voxpupuli/puppet-redis/pull/383) ([carlhals](https://github.com/carlhals))
+- enable sentinel bind usage with multi ip [\#365](https://github.com/voxpupuli/puppet-redis/pull/365) ([ragingdave](https://github.com/ragingdave))
+- Make protected-mode configurable for sentinel [\#272](https://github.com/voxpupuli/puppet-redis/pull/272) ([eliskovets](https://github.com/eliskovets))
+
+**Fixed bugs:**
+
+- Set the correct log dir on RH SCL [\#379](https://github.com/voxpupuli/puppet-redis/pull/379) ([ekohl](https://github.com/ekohl))
+- Drop dotdeb repo management support [\#371](https://github.com/voxpupuli/puppet-redis/pull/371) ([ekohl](https://github.com/ekohl))
+- Correct config\_dir for scl support [\#353](https://github.com/voxpupuli/puppet-redis/pull/353) ([markasammut](https://github.com/markasammut))
+
+**Closed issues:**
+
+- Make ulimit optional or use puppet-systemd for dropin [\#390](https://github.com/voxpupuli/puppet-redis/issues/390)
+- After a reboot THP \(Transparent Huge Pages\) are enabled again [\#372](https://github.com/voxpupuli/puppet-redis/issues/372)
+- File descriptor limit is not set in systemd unit file by default.  [\#349](https://github.com/voxpupuli/puppet-redis/issues/349)
+- Redhat SCL Config\_Dir Issue [\#341](https://github.com/voxpupuli/puppet-redis/issues/341)
+- \[Feature Request\] Add `rename-command` [\#242](https://github.com/voxpupuli/puppet-redis/issues/242)
+- Undefined variable 'redis\_server\_version' warning on first run [\#227](https://github.com/voxpupuli/puppet-redis/issues/227)
+
+**Merged pull requests:**
+
+- Make spec\_helper.rb managed again [\#380](https://github.com/voxpupuli/puppet-redis/pull/380) ([ekohl](https://github.com/ekohl))
+- Add type alias tests to data types [\#366](https://github.com/voxpupuli/puppet-redis/pull/366) ([ekohl](https://github.com/ekohl))
+
 ## [v6.1.0](https://github.com/voxpupuli/puppet-redis/tree/v6.1.0) (2020-09-11)
 
 [Full Changelog](https://github.com/voxpupuli/puppet-redis/compare/v6.0.0...v6.1.0)
@@ -110,7 +199,7 @@ These should not affect the functionality of the module.
 
 **Implemented enhancements:**
 
-- Add service\_enable parameter to sentinel.pp [\#307](https://github.com/voxpupuli/puppet-redis/pull/307) ([rschemm](https://github.com/rschemm))
+- Add service\_enable parameter to sentinel.pp [\#307](https://github.com/voxpupuli/puppet-redis/pull/307) ([rschemm-godaddy](https://github.com/rschemm-godaddy))
 
 **Closed issues:**
 
@@ -140,14 +229,14 @@ This is the first release since the module was migrated to the Vox Pupuli `puppe
 
 **Closed issues:**
 
+- Get acceptance tests running again [\#292](https://github.com/voxpupuli/puppet-redis/issues/292)
+- Convert function to API v4 ruby function [\#291](https://github.com/voxpupuli/puppet-redis/issues/291)
 - Transparent Huge Pages \(THP\) Not Disabled on RHEL [\#278](https://github.com/voxpupuli/puppet-redis/issues/278)
 - Looking for maintainer \[Help needed\] [\#277](https://github.com/voxpupuli/puppet-redis/issues/277)
 - Travis Credential issues... still :\( [\#267](https://github.com/voxpupuli/puppet-redis/issues/267)
 - Outdated dependency puppetlabs-apt \< 3.0.0 [\#264](https://github.com/voxpupuli/puppet-redis/issues/264)
 - cannot bind ipv4 and ipv6 [\#257](https://github.com/voxpupuli/puppet-redis/issues/257)
 - Deprecate Puppet 3.X Support [\#152](https://github.com/voxpupuli/puppet-redis/issues/152)
-- Get acceptance tests running again [\#292](https://github.com/voxpupuli/puppet-redis/issues/292)
-- Convert function to API v4 ruby function [\#291](https://github.com/voxpupuli/puppet-redis/issues/291)
 
 **Merged pull requests:**
 

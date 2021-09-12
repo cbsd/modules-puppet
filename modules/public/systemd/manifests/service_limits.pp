@@ -4,10 +4,10 @@
 #
 # @see systemd.exec(5)
 #
-# @attr name [Pattern['^.+\.(service|socket|mount|swap)$']]
+# @param name [Pattern['^.+\.(service|socket|mount|swap)$']]
 #   The name of the service that you will be modifying
 #
-# @param $ensure
+# @param ensure
 #   Whether to drop a file or remove it
 #
 # @param path
@@ -24,20 +24,19 @@
 # @param source
 #   A ``File`` resource compatible ``source``
 #
-#  * Mutually exclusive with ``$limits``
+#   * Mutually exclusive with ``$limits``
 #
 # @param restart_service
 #   Restart the managed service after setting the limits
 #
-define systemd::service_limits(
+define systemd::service_limits (
   Enum['present', 'absent', 'file'] $ensure                  = 'present',
   Stdlib::Absolutepath              $path                    = '/etc/systemd/system',
-  Optional[Boolean]                 $selinux_ignore_defaults = false,
+  Boolean                           $selinux_ignore_defaults = false,
   Optional[Systemd::ServiceLimits]  $limits                  = undef,
   Optional[String]                  $source                  = undef,
   Boolean                           $restart_service         = true
 ) {
-
   include systemd
 
   if $name !~ Pattern['^.+\.(service|socket|mount|swap)$'] {
@@ -73,10 +72,9 @@ define systemd::service_limits(
   if $restart_service {
     exec { "restart ${name} because limits":
       command     => "systemctl restart ${name}",
-      path        => $::path,
+      path        => $facts['path'],
       refreshonly => true,
       subscribe   => File["${path}/${name}.d/90-limits.conf"],
-      require     => Class['systemd::systemctl::daemon_reload'],
     }
   }
 }

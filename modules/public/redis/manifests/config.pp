@@ -38,19 +38,8 @@ class redis::config {
     }
   }
 
-  if $redis::ulimit {
+  if $redis::ulimit_managed {
     contain redis::ulimit
-  }
-
-  $service_provider_lookup = fact('service_provider')
-
-  unless $facts['os']['family'] == 'Debian' or $service_provider_lookup == 'systemd' {
-    file { '/var/run/redis':
-      ensure => 'directory',
-      owner  => $redis::config_owner,
-      group  => $redis::config_group,
-      mode   => '0755',
-    }
   }
 
   # Adjust /etc/default/redis-server on Debian systems

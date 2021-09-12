@@ -1,4 +1,4 @@
-# Creates a systemd unit file
+# @summary Creates a systemd unit file
 #
 # @api public
 #
@@ -46,10 +46,13 @@
 # @param active
 #   If set, will manage the state of the unit.
 #
-define systemd::unit_file(
+# @param restart
+#   Specify a restart command manually. If left unspecified, a standard Puppet service restart happens.
+#
+define systemd::unit_file (
   Enum['present', 'absent', 'file']        $ensure    = 'present',
   Stdlib::Absolutepath                     $path      = '/etc/systemd/system',
-  Optional[String]                         $content   = undef,
+  Optional[Variant[String, Sensitive[String], Deferred]] $content = undef,
   Optional[String]                         $source    = undef,
   Optional[Stdlib::Absolutepath]           $target    = undef,
   String                                   $owner     = 'root',
@@ -58,6 +61,7 @@ define systemd::unit_file(
   Boolean                                  $show_diff = true,
   Optional[Variant[Boolean, Enum['mask']]] $enable    = undef,
   Optional[Boolean]                        $active    = undef,
+  Optional[String]                         $restart   = undef,
 ) {
   include systemd
 
@@ -81,13 +85,13 @@ define systemd::unit_file(
     group     => $group,
     mode      => $mode,
     show_diff => $show_diff,
-    notify    => Class['systemd::systemctl::daemon_reload'],
   }
 
   if $enable != undef or $active != undef {
     service { $name:
       ensure   => $active,
       enable   => $enable,
+      restart  => $restart,
       provider => 'systemd',
     }
 
@@ -97,8 +101,15 @@ define systemd::unit_file(
       }
       Service[$name] -> File["${path}/${name}"]
     } else {
-      Class['systemd::systemctl::daemon_reload'] -> Service[$name]
       File["${path}/${name}"] ~> Service[$name]
+    }
+  } elsif $ensure == 'absent' {
+    # Work around https://tickets.puppetlabs.com/browse/PUP-9473
+    exec { "${name}-systemctl-daemon-reload":
+      command     => 'systemctl daemon-reload',
+      refreshonly => true,
+      path        => $facts['path'],
+      subscribe   => File["${path}/${name}"],
     }
   }
 }

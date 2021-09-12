@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'digest/md5'
 
 Puppet::Type.newtype(:ini_subsetting) do
@@ -75,7 +77,7 @@ Puppet::Type.newtype(:ini_subsetting) do
     defaultto('')
 
     validate do |value|
-      unless value =~ %r{^["']?$}
+      unless value.match?(%r{^["']?$})
         raise Puppet::Error, _(%q(:quote_char valid values are '', '"' and "'"))
       end
     end
@@ -100,7 +102,7 @@ Puppet::Type.newtype(:ini_subsetting) do
       end
     end
 
-    def is_to_s(value) # rubocop:disable Style/PredicateName : Changing breaks the code (./.bundle/gems/gems/puppet-5.3.3-universal-darwin/lib/puppet/parameter.rb:525:in `to_s')
+    def is_to_s(value) # rubocop:disable Naming/PredicateName : Changing breaks the code (./.bundle/gems/gems/puppet-5.3.3-universal-darwin/lib/puppet/parameter.rb:525:in `to_s')
       should_to_s(value)
     end
   end
@@ -122,5 +124,11 @@ Puppet::Type.newtype(:ini_subsetting) do
 
   newparam(:insert_value) do
     desc 'The value for the insert types which require one.'
+  end
+
+  newparam(:delete_if_empty) do
+    desc 'Set to true to delete the parent setting when the subsetting is empty instead of writing an empty string'
+    newvalues(:true, :false)
+    defaultto(:false)
   end
 end

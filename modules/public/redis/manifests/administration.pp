@@ -1,42 +1,35 @@
-# Allows various adminstrative settings for Redis
-# As documented in the FAQ and https://redis.io/topics/admin
+# @summary Allows various administrative settings for Redis
+# As documented in the FAQ and https://redis.io/topics/admin.
+# For disabling Transparent Huge Pages (THP), use separate module such as:
+# https://forge.puppet.com/modules/alexharvey/disable_transparent_hugepage
+#
+# Note that this class requires the herculesteam/augeasproviders_sysctl module.
 #
 # @example
 #   include redis::administration
 #
 # @example
 #   class {'redis::administration':
-#     disable_thp => false,
+#     enable_overcommit_memory => false,
 #   }
 #
 # @param enable_overcommit_memory
 #   Enable the overcommit memory setting
-# @param disable_thp
-#   Disable Transparent Huge Pages
 # @param somaxconn
 #   Set somaxconn value
 #
 # @author - Peter Souter
 # @see https://redis.io/topics/admin
+# @see https://forge.puppet.com/herculesteam/augeasproviders_sysctl
 #
 class redis::administration (
   Boolean $enable_overcommit_memory = true,
-  Boolean $disable_thp              = true,
   Integer[0] $somaxconn             = 65535,
 ) {
   if $enable_overcommit_memory {
     sysctl { 'vm.overcommit_memory':
       ensure => 'present',
       value  => '1',
-    }
-  }
-
-  if $disable_thp {
-    exec { 'Disable Hugepages':
-      command => 'echo never > /sys/kernel/mm/transparent_hugepage/enabled',
-      path    => ['/sbin', '/usr/sbin', '/bin', '/usr/bin'],
-      onlyif  => 'test -f /sys/kernel/mm/transparent_hugepage/enabled',
-      unless  => 'cat /sys/kernel/mm/transparent_hugepage/enabled | grep "\[never\]"',
     }
   }
 
