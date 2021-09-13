@@ -26,7 +26,7 @@ class postgresql::server::initdb {
     cwd        => $module_workdir,
   }
 
-  if $::osfamily == 'RedHat' and $::selinux == true {
+  if $facts['os']['family'] == 'RedHat' and $facts['os']['selinux']['enabled'] == true {
     $seltype = 'postgresql_db_t'
     $logdir_type = 'postgresql_log_t'
   }
@@ -68,7 +68,7 @@ class postgresql::server::initdb {
       }
     } else {
       # changes an already defined xlogdir
-      File <| title == $xlogdir |>  {
+      File <| title == $xlogdir |> {
         ensure  => directory,
         owner   => $user,
         group   => $group,
@@ -145,30 +145,6 @@ class postgresql::server::initdb {
       logoutput => on_failure,
       require   => File[$require_before_initdb],
       cwd       => $module_workdir,
-    }
-    # The package will take care of this for us the first time, but if we
-    # ever need to init a new db we need to copy these files explicitly
-    if $::operatingsystem == 'Debian' or $::operatingsystem == 'Ubuntu' {
-      if $::operatingsystemrelease =~ /^6/ or $::operatingsystemrelease =~ /^7/ or $::operatingsystemrelease =~ /^10\.04/ or $::operatingsystemrelease =~ /^12\.04/ {
-        file { 'server.crt':
-          ensure  => file,
-          path    => "${datadir}/server.crt",
-          source  => 'file:///etc/ssl/certs/ssl-cert-snakeoil.pem',
-          owner   => $::postgresql::server::user,
-          group   => $::postgresql::server::group,
-          mode    => '0644',
-          require => Exec['postgresql_initdb'],
-        }
-        file { 'server.key':
-          ensure  => file,
-          path    => "${datadir}/server.key",
-          source  => 'file:///etc/ssl/private/ssl-cert-snakeoil.key',
-          owner   => $::postgresql::server::user,
-          group   => $::postgresql::server::group,
-          mode    => '0600',
-          require => Exec['postgresql_initdb'],
-        }
-      }
     }
   } elsif $encoding != undef {
     # [workaround]

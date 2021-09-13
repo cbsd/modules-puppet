@@ -30,6 +30,7 @@
 # @param pg_hba_conf_path Specifies the path to your pg_hba.conf file.
 # @param pg_ident_conf_path Specifies the path to your pg_ident.conf file.
 # @param postgresql_conf_path Sets the path to your postgresql.conf file.
+# @param postgresql_conf_mode Sets the mode of your postgresql.conf file. Only relevant if manage_postgresql_conf_perms is true.
 # @param recovery_conf_path Path to your recovery.conf file.
 # @param default_connect_settings Default connection settings.
 #
@@ -56,6 +57,7 @@
 # @param repo_proxy Sets the proxy option for the official PostgreSQL yum-repositories only.
 #
 # @param repo_baseurl Sets the baseurl for the PostgreSQL repository. Useful if you host your own mirror of the repository.
+# @param yum_repo_commonurl Sets the url for the PostgreSQL common Yum repository. Useful if you host your own mirror of the YUM repository.
 #
 # @param needs_initdb Explicitly calls the initdb operation after the server package is installed and before the PostgreSQL service is started.
 #
@@ -75,85 +77,98 @@
 # @param manage_pg_hba_conf Allow Puppet to manage the pg_hba.conf file.
 # @param manage_pg_ident_conf Allow Puppet to manage the pg_ident.conf file.
 # @param manage_recovery_conf Allow Puppet to manage the recovery.conf file.
+# @param manage_postgresql_conf_perms
+#   Whether to manage the postgresql conf file permissions. This means owner,
+#   group and mode. Contents are not managed but should be managed through
+#   postgresql::server::config_entry.
 #
 # @param manage_datadir Set to false if you have file{ $datadir: } already defined
 # @param manage_logdir Set to false if you have file{ $logdir: } already defined
 # @param manage_xlogdir Set to false if you have file{ $xlogdir: } already defined
 #
 # @param manage_package_repo Sets up official PostgreSQL repositories on your host if set to true.
+# @param manage_dnf_module
+#   Manage the DNF module. This only makes sense on distributions that use DNF
+#   package manager, such as EL8 or Fedora. It also requires Puppet 5.5.20+ or
+#   Puppet 6.15.0+ since they ship the dnfmodule provider.
 # @param module_workdir Specifies working directory under which the psql command should be executed. May need to specify if '/tmp' is on volume mounted with noexec option.
 #
 #
 class postgresql::globals (
-  $client_package_name      = undef,
-  $server_package_name      = undef,
-  $contrib_package_name     = undef,
-  $devel_package_name       = undef,
-  $java_package_name        = undef,
-  $docs_package_name        = undef,
-  $perl_package_name        = undef,
-  $plperl_package_name      = undef,
-  $plpython_package_name    = undef,
-  $python_package_name      = undef,
-  $postgis_package_name     = undef,
+  $client_package_name                             = undef,
+  $server_package_name                             = undef,
+  $contrib_package_name                            = undef,
+  $devel_package_name                              = undef,
+  $java_package_name                               = undef,
+  $docs_package_name                               = undef,
+  $perl_package_name                               = undef,
+  $plperl_package_name                             = undef,
+  $plpython_package_name                           = undef,
+  $python_package_name                             = undef,
+  $postgis_package_name                            = undef,
 
-  $service_name             = undef,
-  $service_provider         = undef,
-  $service_status           = undef,
-  $default_database         = undef,
+  $service_name                                    = undef,
+  $service_provider                                = undef,
+  $service_status                                  = undef,
+  $default_database                                = undef,
 
-  $validcon_script_path     = undef,
+  $validcon_script_path                            = undef,
 
-  $initdb_path              = undef,
-  $createdb_path            = undef,
-  $psql_path                = undef,
-  $pg_hba_conf_path         = undef,
-  $pg_ident_conf_path       = undef,
-  $postgresql_conf_path     = undef,
-  $recovery_conf_path       = undef,
-  $default_connect_settings = {},
+  $initdb_path                                     = undef,
+  $createdb_path                                   = undef,
+  $psql_path                                       = undef,
+  $pg_hba_conf_path                                = undef,
+  $pg_ident_conf_path                              = undef,
+  $postgresql_conf_path                            = undef,
+  Optional[Stdlib::Filemode] $postgresql_conf_mode = undef,
+  $recovery_conf_path                              = undef,
+  $default_connect_settings                        = {},
 
-  $pg_hba_conf_defaults     = undef,
+  $pg_hba_conf_defaults                            = undef,
 
-  $datadir                  = undef,
-  $confdir                  = undef,
-  $bindir                   = undef,
-  $xlogdir                  = undef,
-  $logdir                   = undef,
-  $log_line_prefix          = undef,
-  $manage_datadir           = undef,
-  $manage_logdir            = undef,
-  $manage_xlogdir           = undef,
+  $datadir                                         = undef,
+  $confdir                                         = undef,
+  $bindir                                          = undef,
+  $xlogdir                                         = undef,
+  $logdir                                          = undef,
+  $log_line_prefix                                 = undef,
+  $manage_datadir                                  = undef,
+  $manage_logdir                                   = undef,
+  $manage_xlogdir                                  = undef,
 
-  $user                     = undef,
-  $group                    = undef,
+  $user                                            = undef,
+  $group                                           = undef,
 
-  $version                  = undef,
-  $postgis_version          = undef,
-  $repo_proxy               = undef,
-  $repo_baseurl             = undef,
+  $version                                         = undef,
+  $postgis_version                                 = undef,
+  $repo_proxy                                      = undef,
+  $repo_baseurl                                    = undef,
+  $yum_repo_commonurl                              = undef,
 
-  $needs_initdb             = undef,
+  $needs_initdb                                    = undef,
 
-  $encoding                 = undef,
-  $locale                   = undef,
-  $data_checksums           = undef,
-  $timezone                 = undef,
+  $encoding                                        = undef,
+  $locale                                          = undef,
+  $data_checksums                                  = undef,
+  $timezone                                        = undef,
 
-  $manage_pg_hba_conf       = undef,
-  $manage_pg_ident_conf     = undef,
-  $manage_recovery_conf     = undef,
-  $manage_selinux           = undef,
+  $manage_pg_hba_conf                              = undef,
+  $manage_pg_ident_conf                            = undef,
+  $manage_recovery_conf                            = undef,
+  $manage_postgresql_conf_perms                    = undef,
+  $manage_selinux                                  = undef,
 
-  $manage_package_repo      = undef,
-  $module_workdir           = undef,
+  $manage_package_repo                             = undef,
+  Boolean $manage_dnf_module                       = false,
+  $module_workdir                                  = undef,
 ) {
   # We are determining this here, because it is needed by the package repo
   # class.
-  $default_version = $::osfamily ? {
-    /^(RedHat|Linux)/ => $::operatingsystem ? {
-      'Fedora' => $::operatingsystemrelease ? {
-        /^(32)$/       => '12',
+  $default_version = $facts['os']['family'] ? {
+    /^(RedHat|Linux)/ => $facts['os']['name'] ? {
+      'Fedora' => $facts['os']['release']['major'] ? {
+        /^(34)$/       => '13',
+        /^(32|33)$/    => '12',
         /^(31)$/       => '11.6',
         /^(30)$/       => '11.2',
         /^(29)$/       => '10.6',
@@ -167,26 +182,23 @@ class postgresql::globals (
         default        => undef,
       },
       'Amazon' => '9.2',
-      default => $::operatingsystemrelease ? {
-        /^8\./ => '10',
-        /^7\./ => '9.2',
-        /^6\./ => '8.4',
-        /^5\./ => '8.1',
+      default => $facts['os']['release']['major'] ? {
+        '8'     => '10',
+        '7'     => '9.2',
+        '6'     => '8.4',
+        '5'     => '8.1',
         default => undef,
       },
     },
-    'Debian' => $::operatingsystem ? {
-      'Debian' => $::operatingsystemrelease ? {
-        /^(squeeze|6\.)/ => '8.4',
-        /^(wheezy|7\.)/  => '9.1',
-        /^(jessie|8\.)/  => '9.4',
-        /^(stretch|9\.)/ => '9.6',
-        /^(buster|10\.)/ => '11',
+    'Debian' => $facts['os']['name'] ? {
+      'Debian' => $facts['os']['release']['major'] ? {
+        '8'     => '9.4',
+        '9'     => '9.6',
+        '10'    => '11',
+        '11'    => '13',
         default => undef,
       },
-      'Ubuntu' => $::operatingsystemrelease ? {
-        /^(10.04|10.10|11.04)$/ => '8.4',
-        /^(11.10|12.04|12.10|13.04|13.10)$/ => '9.1',
+      'Ubuntu' => $facts['os']['release']['major'] ? {
         /^(14.04)$/ => '9.3',
         /^(14.10|15.04|15.10)$/ => '9.4',
         /^(16.04|16.10)$/ => '9.5',
@@ -197,28 +209,25 @@ class postgresql::globals (
       },
       default => undef,
     },
-    'Archlinux' => $::operatingsystem ? {
-      /Archlinux/ => '9.2',
-      default => '9.2',
-    },
+    'Archlinux' => '9.2',
     'Gentoo' => '9.5',
-    'FreeBSD' => '93',
-    'OpenBSD' => $::operatingsystemrelease ? {
+    'FreeBSD' => '12',
+    'OpenBSD' => $facts['os']['release']['full'] ? {
       /5\.6/ => '9.3',
       /5\.[7-9]/ => '9.4',
       /6\.[0-9]/ => '9.5',
     },
-    'Suse' => $::operatingsystem ? {
-      'SLES' => $::operatingsystemrelease ? {
+    'Suse' => $facts['os']['name'] ? {
+      'SLES' => $facts['os']['release']['full'] ? {
         /11\.[0-3]/ => '91',
         /11\.4/     => '94',
         /12\.0/     => '93',
         /12\.[1-3]/ => '94',
         /12\.[4-5]/ => '10',
-        /15\.0/     => '10',
+        /15\.[0-9]/     => '10',
         default     => '96',
       },
-      'OpenSuSE' => $::operatingsystemrelease ? {
+      'OpenSuSE' => $facts['os']['release']['full'] ? {
         /42\.[1-2]/ => '94',
         default     => '96',
       },
@@ -256,9 +265,16 @@ class postgresql::globals (
   # Setup of the repo only makes sense globally, so we are doing this here.
   if($manage_package_repo) {
     class { 'postgresql::repo':
-      version => $globals_version,
-      proxy   => $repo_proxy,
-      baseurl => $repo_baseurl,
+      version   => $globals_version,
+      proxy     => $repo_proxy,
+      baseurl   => $repo_baseurl,
+      commonurl => $yum_repo_commonurl,
+    }
+  }
+
+  if $manage_dnf_module {
+    class { 'postgresql::dnfmodule':
+      ensure => $globals_version,
     }
   }
 }

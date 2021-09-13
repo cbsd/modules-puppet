@@ -74,8 +74,7 @@ apply_in_jail_local()
 			*)
 				echo "[debug] jexec jname=${jname} env LANG=en_US.UTF-8 /tmp/cbsdpuppet/puppetcbsd ${jail_workdir}/puppet_root/manifest/init.pp"
 				if [ -n "${have_restart}" ]; then
-					echo "service jname=${jname} enable ${have_restart}"
-					service jname=${jname} mode=action ${have_restart} enable
+					sysrc jname=${jname} ${have_restart}_enable="YES"
 				fi
 
 				jexec jname=${jname} env LANG=en_US.UTF-8 /tmp/cbsdpuppet/puppetcbsd debug ${jail_workdir}/puppet_root/manifest/init.pp
@@ -88,8 +87,7 @@ apply_in_jail_local()
 				;;
 			*)
 				if [ -n "${have_restart}" ]; then
-					echo "service jname=${jname} enable ${have_restart}"
-					service jname=${jname} mode=action ${have_restart} enable
+					sysrc jname=${jname} ${have_restart}_enable="YES"
 				fi
 				jexec jname=${jname} env LANG=en_US.UTF-8 /tmp/cbsdpuppet/puppetcbsd ${jail_workdir}/puppet_root/manifest/init.pp
 				;;

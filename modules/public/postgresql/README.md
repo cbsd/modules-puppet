@@ -131,6 +131,19 @@ This applies to objects within the nominated database, 'test_db' only.
 
 For Postgresql >= 9.3, the ownership of the database is also updated.
 
+### Manage default permissions (PostgreSQL >= 9.6)
+
+To change default permissions for newly created objects using ALTER DEFAULT PRIVILEGES:
+
+```puppet
+postgresql::server::default_privileges { 'marmot access to new tables on test_db':
+  db          => 'test_db',
+  role        => 'marmot',
+  privilege   => 'ALL',
+  object_type => 'TABLES',
+}
+```
+
 ### Override defaults
 
 The `postgresql::globals` class allows you to configure the main settings for this module globally, so that other classes and defined resources can use them. By itself, it does nothing.
@@ -316,13 +329,13 @@ exec { 'rake db:migrate':
 
 ## Reference
 
-For information on the classes and types, see the [REFERENCE.md](https://github.com/puppetlabs/puppetlabs-postgresql/blob/master/REFERENCE.md)
+For information on the classes and types, see the [REFERENCE.md](https://github.com/puppetlabs/puppetlabs-postgresql/blob/main/REFERENCE.md)
 
 ## Limitations
 
 Works with versions of PostgreSQL on supported OSes.  
 
-For an extensive list of supported operating systems, see [metadata.json](https://github.com/puppetlabs/puppetlabs-postgresql/blob/master/metadata.json)
+For an extensive list of supported operating systems, see [metadata.json](https://github.com/puppetlabs/puppetlabs-postgresql/blob/main/metadata.json)
 
 ### Apt module support
 

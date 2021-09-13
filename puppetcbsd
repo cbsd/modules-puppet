@@ -1,4 +1,5 @@
 #!/bin/sh
+export LANG="C.UTF-8"
 name="ldconfig"
 ldconfig_command="/sbin/ldconfig"
 

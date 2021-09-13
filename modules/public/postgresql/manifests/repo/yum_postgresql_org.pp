@@ -9,10 +9,10 @@ class postgresql::repo::yum_postgresql_org inherits postgresql::repo {
     owner  => 'root',
     group  => 'root',
     mode   => '0644',
-    before => Yumrepo['yum.postgresql.org']
+    before => Yumrepo['yum.postgresql.org'],
   }
 
-  if($::operatingsystem == 'Fedora') {
+  if($facts['os']['name'] == 'Fedora') {
     $label1 = 'fedora'
     $label2 = $label1
   } else {
@@ -20,12 +20,23 @@ class postgresql::repo::yum_postgresql_org inherits postgresql::repo {
     $label2 = 'rhel'
   }
   $default_baseurl = "https://download.postgresql.org/pub/repos/yum/${postgresql::repo::version}/${label1}/${label2}-\$releasever-\$basearch"
+  $default_commonurl = "https://download.postgresql.org/pub/repos/yum/common/${label1}/${label2}-\$releasever-\$basearch"
 
   $_baseurl = pick($postgresql::repo::baseurl, $default_baseurl)
+  $_commonurl = pick($postgresql::repo::commonurl, $default_commonurl)
 
   yumrepo { 'yum.postgresql.org':
     descr    => "PostgreSQL ${postgresql::repo::version} \$releasever - \$basearch",
     baseurl  => $_baseurl,
+    enabled  => 1,
+    gpgcheck => 1,
+    gpgkey   => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG-${package_version}",
+    proxy    => $postgresql::repo::proxy,
+  }
+
+  yumrepo { 'pgdg-common':
+    descr    => "PostgreSQL common RPMs \$releasever - \$basearch",
+    baseurl  => $_commonurl,
     enabled  => 1,
     gpgcheck => 1,
     gpgkey   => "file:///etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG-${package_version}",
