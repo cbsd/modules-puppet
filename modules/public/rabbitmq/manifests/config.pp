@@ -60,6 +60,9 @@ class rabbitmq::config {
   $ssl_dhfile                          = $rabbitmq::ssl_dhfile
   $ssl_versions                        = $rabbitmq::ssl_versions
   $ssl_ciphers                         = $rabbitmq::ssl_ciphers
+  $ssl_crl_check                       = $rabbitmq::ssl_crl_check
+  $ssl_crl_cache_hash_dir              = $rabbitmq::ssl_crl_cache_hash_dir
+  $ssl_crl_cache_http_timeout          = $rabbitmq::ssl_crl_cache_http_timeout
   $stomp_port                          = $rabbitmq::stomp_port
   $stomp_ssl_only                      = $rabbitmq::stomp_ssl_only
   $ldap_auth                           = $rabbitmq::ldap_auth
@@ -78,6 +81,7 @@ class rabbitmq::config {
   $auth_backends                       = $rabbitmq::auth_backends
   $cluster_partition_handling          = $rabbitmq::cluster_partition_handling
   $file_limit                          = $rabbitmq::file_limit
+  $oom_score_adj                       = $rabbitmq::oom_score_adj
   $collect_statistics_interval         = $rabbitmq::collect_statistics_interval
   $ipv6                                = $rabbitmq::ipv6
   $inetrc_config                       = $rabbitmq::inetrc_config
@@ -232,7 +236,10 @@ class rabbitmq::config {
   if $facts['systemd'] { # systemd fact provided by systemd module
     systemd::service_limits { "${service_name}.service":
       selinux_ignore_defaults => ($facts['os']['family'] == 'RedHat'),
-      limits                  => { 'LimitNOFILE' => $file_limit },
+      limits                  => {
+        'LimitNOFILE'    => $file_limit,
+        'OOMScoreAdjust' => $oom_score_adj,
+      },
       # The service will be notified when config changes
       restart_service         => false,
     }

@@ -22,6 +22,7 @@ _Private Classes_
 **Resource types**
 
 * [`rabbitmq_binding`](#rabbitmq_binding): Native type for managing rabbitmq bindings  rabbitmq_binding { 'binding 1':   ensure           => present,   source           => 'myexchange'
+* [`rabbitmq_cluster`](#rabbitmq_cluster): Native type for managing rabbitmq cluster
 * [`rabbitmq_erlang_cookie`](#rabbitmq_erlang_cookie): Type to manage the rabbitmq erlang cookie securely  This is essentially a private type used by the rabbitmq::config class to manage the erlan
 * [`rabbitmq_exchange`](#rabbitmq_exchange): Native type for managing rabbitmq exchanges
 * [`rabbitmq_parameter`](#rabbitmq_parameter): Type for managing rabbitmq parameters
@@ -140,6 +141,10 @@ This will result in the following config appended to the config file:
 
 ```puppet
 class { 'rabbitmq':
+  cluster                  => {
+    'name'      => 'test_cluster',
+    'init_node' => 'hostname'
+  },
   config_cluster           => true,
   cluster_nodes            => ['rabbit1', 'rabbit2'],
   cluster_node_type        => 'ram',
@@ -188,6 +193,14 @@ ex. `['{foo, baz}', 'baz']` Defaults to [rabbit_auth_backend_internal], and if u
 rabbit_auth_backend_ldap].
 
 Default value: `undef`
+
+##### `cluster`
+
+Data type: `Hash`
+
+Join cluster and change name of cluster.
+
+Default value: $rabbitmq::cluster
 
 ##### `cluster_node_type`
 
@@ -375,6 +388,14 @@ Set rabbitmq file ulimit. Defaults to 16384. Only available on systems with `$::
 
 Default value: 16384
 
+##### `oom_score_adj`
+
+Data type: `Integer[-1000, 1000]`
+
+Set rabbitmq-server process OOM score. Defaults to 0.
+
+Default value: 0
+
 ##### `heartbeat`
 
 Data type: `Optional[Integer]`
@@ -435,9 +456,9 @@ Default value: `false`
 
 ##### `ldap_server`
 
-Data type: `String`
+Data type: `Variant[String[1],Array[String[1]]]`
 
-LDAP server to use for auth.
+LDAP server or servers to use for auth.
 
 Default value: 'ldap'
 
@@ -834,6 +855,33 @@ Functionality can be tested with cipherscan or similar tool: https://github.com/
 
 Default value: []
 
+##### `ssl_crl_check`
+
+Data type: `Enum['true','false','peer','best_effort']`
+
+Perform CRL (Certificate Revocation List) verification
+Please see the [Erlang SSL](https://erlang.org/doc/man/ssl.html#type-crl_check) module documentation for more information.
+
+Default value: 'false'
+
+##### `ssl_crl_cache_hash_dir`
+
+Data type: `Optional[Stdlib::Absolutepath]`
+
+This setting makes use of a directory where CRLs are stored in files named by the hash of the issuer name.
+Please see the [Erlang SSL](https://erlang.org/doc/man/ssl.html#type-crl_cache_opts) module documentation for more information.
+
+Default value: `undef`
+
+##### `ssl_crl_cache_http_timeout`
+
+Data type: `Optional[Integer]`
+
+This setting enables use of internal CRLs cache and sets HTTP timeout interval on fetching CRLs from distributino URLs defined inside certificate.
+Please see the [Erlang SSL](https://erlang.org/doc/man/ssl.html#type-crl_cache_opts) module documentation for more information.
+
+Default value: `undef`
+
 ##### `stomp_port`
 
 Data type: `Integer[1, 65535]`
@@ -1105,6 +1153,64 @@ The password to use to connect to rabbitmq
 
 Default value: guest
 
+### rabbitmq_cluster
+
+Native type for managing rabbitmq cluster
+
+#### Examples
+
+##### Configure a cluster, rabbit_cluster
+
+```puppet
+rabbitmq_cluster { 'rabbit_cluster':
+  init_node      => 'host1'
+}
+```
+
+##### Optional parameter tags will set further rabbitmq tags like monitoring, policymaker, etc.
+
+```puppet
+To set the cluster name use cluster_name.
+rabbitmq_cluster { 'rabbit_cluster':
+  init_node      => 'host1',
+  node_disc_type => 'ram',
+}
+```
+
+#### Properties
+
+The following properties are available in the `rabbitmq_cluster` type.
+
+##### `ensure`
+
+Valid values: present, absent
+
+The basic property that the resource should be in.
+
+Default value: present
+
+#### Parameters
+
+The following parameters are available in the `rabbitmq_cluster` type.
+
+##### `name`
+
+namevar
+
+The cluster name
+
+##### `init_node`
+
+Name of which cluster node to join.
+
+##### `node_disc_type`
+
+Valid values: %r{disc|ram}
+
+Storage type of node, default disc.
+
+Default value: disc
+
 ### rabbitmq_erlang_cookie
 
 Type to manage the rabbitmq erlang cookie securely
@@ -1289,6 +1395,18 @@ rabbitmq_parameter { 'documentumFed@/':
       'expires' => '360000',
   },
 }
+rabbitmq_parameter { 'documentumShovelNoMunging@/':
+  component_name => '',
+  value          => {
+      'src-uri'    => 'amqp://',
+      'src-exchange'  => 'my-exchange',
+      'src-exchange-key' => '6',
+      'src-queue'  => 'my-queue',
+      'dest-uri'   => 'amqp://remote-server',
+      'dest-exchange' => 'another-exchange',
+  },
+  autoconvert   => false,
+}
 ```
 
 #### Properties
@@ -1322,6 +1440,14 @@ Valid values: %r{^\S+@\S+$}
 namevar
 
 combination of name@vhost to set parameter for
+
+##### `autoconvert`
+
+Valid values: `true`, `false`
+
+whether numeric strings from `value` should be converted to int automatically
+
+Default value: `true`
 
 ### rabbitmq_plugin
 

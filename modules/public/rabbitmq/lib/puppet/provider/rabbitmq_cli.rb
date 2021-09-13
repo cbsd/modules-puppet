@@ -25,7 +25,7 @@ class Puppet::Provider::RabbitmqCli < Puppet::Provider
 
   def self.home_tmp_command(name, path)
     has_command name, path do
-      environment HOME: '/tmp'
+      environment HOME: '/tmp', LC_ALL: 'en_US.UTF-8'
     end
   end
 
@@ -40,6 +40,7 @@ class Puppet::Provider::RabbitmqCli < Puppet::Provider
     output = rabbitmqctl('-q', 'status')
     version = output.match(%r{RabbitMQ.*?([\d\.]+)})
     @rabbitmq_version = version[1] if version
+    @rabbitmq_version
   end
 
   def self.rabbitmqctl_list(resource, *opts)
