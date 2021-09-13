@@ -315,6 +315,7 @@ case "${mode}" in
 			${ECHO} "${N1_COLOR}applying puppet manifest from: ${N2_COLOR}${local_puppet_manifest_dir}/init.pp${N0_COLOR}"
 		fi
 		[ -z "${puppet_apply_method}" ] && puppet_apply_method="local"
+		merge_new
 		puppet_setup
 		;;
 	*)
@@ -327,3 +328,5 @@ case "${mode}" in
 		generate_manifest
 		;;
 esac
+
+exit 0
