@@ -26,7 +26,7 @@
 
 ## Classes
 
-### `firewall`
+### <a name="firewall"></a>`firewall`
 
 Performs the basic setup tasks required for using the firewall resources.
 
@@ -45,9 +45,17 @@ class { 'firewall': }
 
 #### Parameters
 
-The following parameters are available in the `firewall` class.
+The following parameters are available in the `firewall` class:
 
-##### `ensure`
+* [`ensure`](#ensure)
+* [`ensure_v6`](#ensure_v6)
+* [`pkg_ensure`](#pkg_ensure)
+* [`service_name`](#service_name)
+* [`service_name_v6`](#service_name_v6)
+* [`package_name`](#package_name)
+* [`ebtables_manage`](#ebtables_manage)
+
+##### <a name="ensure"></a>`ensure`
 
 Data type: `Any`
 
@@ -55,7 +63,7 @@ Controls the state of the ipv4 iptables service on your system. Valid options: '
 
 Default value: `running`
 
-##### `ensure_v6`
+##### <a name="ensure_v6"></a>`ensure_v6`
 
 Data type: `Any`
 
@@ -63,7 +71,7 @@ Controls the state of the ipv6 iptables service on your system. Valid options: '
 
 Default value: ``undef``
 
-##### `pkg_ensure`
+##### <a name="pkg_ensure"></a>`pkg_ensure`
 
 Data type: `Any`
 
@@ -71,31 +79,31 @@ Controls the state of the iptables package on your system. Valid options: 'prese
 
 Default value: `present`
 
-##### `service_name`
+##### <a name="service_name"></a>`service_name`
 
 Data type: `Any`
 
 Specify the name of the IPv4 iptables service.
 
-Default value: `$::firewall::params::service_name`
+Default value: `$firewall::params::service_name`
 
-##### `service_name_v6`
+##### <a name="service_name_v6"></a>`service_name_v6`
 
 Data type: `Any`
 
 Specify the name of the IPv6 iptables service.
 
-Default value: `$::firewall::params::service_name_v6`
+Default value: `$firewall::params::service_name_v6`
 
-##### `package_name`
+##### <a name="package_name"></a>`package_name`
 
 Data type: `Any`
 
 Specify the platform-specific package(s) to install.
 
-Default value: `$::firewall::params::package_name`
+Default value: `$firewall::params::package_name`
 
-##### `ebtables_manage`
+##### <a name="ebtables_manage"></a>`ebtables_manage`
 
 Data type: `Any`
 
@@ -105,7 +113,7 @@ Default value: ``false``
 
 ## Resource types
 
-### `firewall`
+### <a name="firewall"></a>`firewall`
 
 **Autorequires:**
 
@@ -146,6 +154,8 @@ installed.
   * address_type: The ability to match on source or destination address type.
 
   * clusterip: Configure a simple cluster of nodes that share a certain IP and MAC address without an explicit load balancer in front of them.
+
+  * condition: Match if a specific condition variable is (un)set (requires xtables-addons)
 
   * connection_limiting: Connection limiting features.
 
@@ -334,6 +344,10 @@ Valid values: `%r{\d+}`
 
 Used with the CLUSTERIP jump target.
 Number of total nodes within this cluster.
+
+##### `condition`
+
+Match on boolean value (0/1) stored in /proc/net/nf_condition/name.
 
 ##### `connlimit_above`
 
@@ -1361,11 +1375,15 @@ Assign this packet to zone id and only have lookups done in that zone.
 
 The following parameters are available in the `firewall` type.
 
-##### `line`
+* [`line`](#line)
+* [`name`](#name)
+* [`provider`](#provider)
+
+##### <a name="line"></a>`line`
 
 Read-only property for caching the rule line.
 
-##### `name`
+##### <a name="name"></a>`name`
 
 Valid values: `%r{^\d+[[:graph:][:space:]]+$}`
 
@@ -1380,12 +1398,12 @@ so make sure you prefix the rule with a number:
 Depending on the provider, the name of the rule can be stored using
 the comment feature of the underlying firewall subsystem.
 
-##### `provider`
+##### <a name="provider"></a>`provider`
 
 The specific backend to use for this `firewall` resource. You will seldom need to specify this --- Puppet will usually
 discover the appropriate provider for your platform.
 
-### `firewallchain`
+### <a name="firewallchain"></a>`firewallchain`
 
 Currently this supports only iptables, ip6tables and ebtables on Linux. And
 provides support for setting the default policy on chains and tables that
@@ -1433,7 +1451,13 @@ PREROUTING, POSTROUTING) and can be one of:
 
 The following parameters are available in the `firewallchain` type.
 
-##### `ignore`
+* [`ignore`](#ignore)
+* [`ignore_foreign`](#ignore_foreign)
+* [`name`](#name)
+* [`provider`](#provider)
+* [`purge`](#purge)
+
+##### <a name="ignore"></a>`ignore`
 
 Regex to perform on firewall rules to exempt unmanaged rules from purging (when enabled).
 This is matched against the output of `iptables-save`.
@@ -1456,7 +1480,19 @@ firewallchain { 'INPUT:filter:IPv4':
 }
 ```
 
-##### `name`
+##### <a name="ignore_foreign"></a>`ignore_foreign`
+
+Valid values: ``false``, ``true``
+
+Ignore rules that do not match the puppet title pattern "^\d+[[:graph:][:space:]]" when purging unmanaged firewall rules
+in this chain.
+This can be used to ignore rules that were not put in by puppet. Beware that nothing keeps other systems from
+configuring firewall rules with a comment that starts with digits, and is indistinguishable from puppet-configured
+rules.
+
+Default value: ``false``
+
+##### <a name="name"></a>`name`
 
 namevar
 
@@ -1464,12 +1500,12 @@ The canonical name of the chain.
 
 For iptables the format must be {chain}:{table}:{protocol}.
 
-##### `provider`
+##### <a name="provider"></a>`provider`
 
 The specific backend to use for this `firewallchain` resource. You will seldom need to specify this --- Puppet will
 usually discover the appropriate provider for your platform.
 
-##### `purge`
+##### <a name="purge"></a>`purge`
 
 Valid values: ``false``, ``true``
 

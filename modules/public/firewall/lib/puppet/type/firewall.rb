@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 # See: #10295 for more details.
 #
 # This is a workaround for bug: #4248 whereby ruby files outside of the normal
-# provider/type path do not load until pluginsync has occured on the puppetmaster
+# provider/type path do not load until pluginsync has occured on the puppet server
 #
 # In this case I'm trying the relative path first, then falling back to normal
 # mechanisms. This should be fixed in future versions of puppet but it looks
@@ -55,6 +57,8 @@ Puppet::Type.newtype(:firewall) do
       * address_type: The ability to match on source or destination address type.
 
       * clusterip: Configure a simple cluster of nodes that share a certain IP and MAC address without an explicit load balancer in front of them.
+
+      * condition: Match if a specific condition variable is (un)set (requires xtables-addons)
 
       * connection_limiting: Connection limiting features.
 
@@ -146,6 +150,7 @@ Puppet::Type.newtype(:firewall) do
   PUPPETCODE
 
   feature :connection_limiting, 'Connection limiting features.'
+  feature :condition, 'Match if a specific condition variable is (un)set.'
   feature :conntrack, 'Connection tracking features.'
   feature :hop_limiting, 'Hop limiting features.'
   feature :rate_limiting, 'Rate limiting features.'
@@ -636,7 +641,7 @@ Puppet::Type.newtype(:firewall) do
     PUPPETCODE
 
     validate do |value|
-      unless value =~ %r{^[a-zA-Z0-9\-_]+$}
+      unless %r{^[a-zA-Z0-9\-_]+$}.match?(value)
         raise ArgumentError, <<-PUPPETCODE
           Jump destination must consist of alphanumeric characters, an
           underscore or a hyphen.
@@ -669,7 +674,7 @@ Puppet::Type.newtype(:firewall) do
     PUPPETCODE
 
     validate do |value|
-      unless value =~ %r{^[a-zA-Z0-9\-_]+$}
+      unless %r{^[a-zA-Z0-9\-_]+$}.match?(value)
         raise ArgumentError, <<-PUPPETCODE
           Goto destination must consist of alphanumeric characters, an
           underscore or a hyphen.
@@ -1361,6 +1366,8 @@ Puppet::Type.newtype(:firewall) do
       statement.
     PUPPETCODE
     def insync?(is)
+      return false unless is
+
       require 'etc'
 
       # The following code allow us to take into consideration unix mappings
@@ -1408,6 +1415,8 @@ Puppet::Type.newtype(:firewall) do
       statement.
     PUPPETCODE
     def insync?(is)
+      return false unless is
+
       require 'etc'
 
       # The following code allow us to take into consideration unix mappings
@@ -1752,7 +1761,7 @@ Puppet::Type.newtype(:firewall) do
     PUPPETCODE
 
     validate do |value|
-      unless value =~ %r{^\d+$}
+      unless %r{^\d+$}.match?(value)
         raise ArgumentError, <<-PUPPETCODE
           stat_every value must be a digit
         PUPPETCODE
@@ -1845,6 +1854,13 @@ Puppet::Type.newtype(:firewall) do
       MAC Source
     PUPPETCODE
     newvalues(%r{^([0-9a-f]{2}[:]){5}([0-9a-f]{2})$}i)
+    facter_os_name = Facter.value(:os)['name'].downcase
+    facter_os_release = Facter.value(:os)['release']['major'].to_i
+    if ['debian-11', 'sles-15'].include?("#{facter_os_name}-#{facter_os_release}")
+      munge do |value|
+        _value = value.downcase
+      end
+    end
   end
 
   newproperty(:physdev_in, required_features: :iptables) do
@@ -1903,11 +1919,11 @@ Puppet::Type.newtype(:firewall) do
     PUPPETCODE
 
     munge do |value|
-      if value =~ %r{^([0-9]):}
+      if %r{^([0-9]):}.match?(value)
         value = "0#{value}"
       end
 
-      if value =~ %r{^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$}
+      if %r{^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$}.match?(value)
         value = "#{value}:00"
       end
 
@@ -1922,11 +1938,11 @@ Puppet::Type.newtype(:firewall) do
     PUPPETCODE
 
     munge do |value|
-      if value =~ %r{^([0-9]):}
+      if %r{^([0-9]):}.match?(value)
         value = "0#{value}"
       end
 
-      if value =~ %r{^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$}
+      if %r{^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$}.match?(value)
         value = "#{value}:00"
       end
 
@@ -2062,10 +2078,6 @@ Puppet::Type.newtype(:firewall) do
       String matching feature. Matches the packet against the pattern
       given as an argument.
     PUPPETCODE
-
-    munge do |value|
-      _value = "'" + value + "'"
-    end
   end
 
   newproperty(:string_hex) do
@@ -2074,7 +2086,11 @@ Puppet::Type.newtype(:firewall) do
       given as an argument.
     PUPPETCODE
     munge do |value|
-      _value = value.delete(' ')
+      _value = if value.include?('!')
+                 value.split('|').map { |x| x.include?('!') ? x : "|#{x.delete(' ')}|" }.join
+               else
+                 value.delete(' ')
+               end
     end
   end
 
@@ -2252,6 +2268,19 @@ Puppet::Type.newtype(:firewall) do
     newvalues(:true, :false)
   end
 
+  newproperty(:condition, required_features: :condition) do
+    desc <<-PUPPETCODE
+      Match on boolean value (0/1) stored in /proc/net/nf_condition/name.
+    PUPPETCODE
+    validate do |value|
+      unless value.is_a?(String)
+        raise ArgumentError, <<-PUPPETCODE
+          Condition must be a string.
+        PUPPETCODE
+      end
+    end
+  end
+
   autorequire(:firewallchain) do
     reqs = []
     protocol = nil
@@ -2265,8 +2294,9 @@ Puppet::Type.newtype(:firewall) do
 
     unless protocol.nil?
       table = value(:table)
+      main_chains = ['INPUT', 'OUTPUT', 'FORWARD']
       [value(:chain), value(:jump)].each do |chain|
-        reqs << "#{chain}:#{table}:#{protocol}" unless chain.nil? || (['INPUT', 'OUTPUT', 'FORWARD'].include?(chain) && table == :filter)
+        reqs << "#{chain}:#{table}:#{protocol}" unless chain.nil? || (main_chains.include?(chain) && table == :filter)
       end
     end
 
@@ -2332,29 +2362,29 @@ Puppet::Type.newtype(:firewall) do
     # Now we analyse the individual properties to make sure they apply to
     # the correct combinations.
     if value(:uid)
-      unless value(:chain).to_s =~ %r{OUTPUT|POSTROUTING}
+      unless %r{OUTPUT|POSTROUTING}.match?(value(:chain).to_s)
         raise 'Parameter uid only applies to chains ' \
           'OUTPUT,POSTROUTING'
       end
     end
 
     if value(:gid)
-      unless value(:chain).to_s =~ %r{OUTPUT|POSTROUTING}
+      unless %r{OUTPUT|POSTROUTING}.match?(value(:chain).to_s)
         raise 'Parameter gid only applies to chains ' \
           'OUTPUT,POSTROUTING'
       end
     end
 
     if value(:set_mark)
-      unless value(:jump).to_s  =~ %r{MARK} &&
-             value(:table).to_s =~ %r{mangle}
+      unless value(:jump).to_s.include?('MARK') &&
+             value(:table).to_s.include?('mangle')
         raise 'Parameter set_mark only applies to ' \
           'the mangle table and when jump => MARK'
       end
     end
 
     if value(:dport)
-      unless value(:proto).to_s =~ %r{tcp|udp|sctp}
+      unless %r{tcp|udp|sctp}.match?(value(:proto).to_s)
         raise '[%s] Parameter dport only applies to sctp, tcp and udp ' \
           'protocols. Current protocol is [%s] and dport is [%s]' %
               [value(:name), should(:proto), should(:dport)]
@@ -2380,7 +2410,7 @@ Puppet::Type.newtype(:firewall) do
     end
 
     if value(:jump).to_s == 'DNAT'
-      unless value(:table).to_s =~ %r{nat}
+      unless %r{nat}.match?(value(:table).to_s)
         raise 'Parameter jump => DNAT only applies to table => nat'
       end
 
@@ -2390,7 +2420,7 @@ Puppet::Type.newtype(:firewall) do
     end
 
     if value(:jump).to_s == 'SNAT'
-      unless value(:table).to_s =~ %r{nat}
+      unless %r{nat}.match?(value(:table).to_s)
         raise 'Parameter jump => SNAT only applies to table => nat'
       end
 
@@ -2400,7 +2430,7 @@ Puppet::Type.newtype(:firewall) do
     end
 
     if value(:jump).to_s == 'MASQUERADE'
-      unless value(:table).to_s =~ %r{nat}
+      unless %r{nat}.match?(value(:table).to_s)
         raise 'Parameter jump => MASQUERADE only applies to table => nat'
       end
     end
@@ -2483,7 +2513,7 @@ Puppet::Type.newtype(:firewall) do
     end
 
     if value(:jump).to_s == 'CT'
-      unless value(:table).to_s =~ %r{raw}
+      unless %r{raw}.match?(value(:table).to_s)
         raise 'Parameter jump => CT only applies to table => raw'
       end
     end

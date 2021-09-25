@@ -1,6 +1,6 @@
 # firewall
 
-[![Build Status](https://travis-ci.org/puppetlabs/puppetlabs-firewall.png?branch=master)](https://travis-ci.org/puppetlabs/puppetlabs-firewall)
+[![Build Status](https://travis-ci.org/puppetlabs/puppetlabs-firewall.png?branch=main)](https://travis-ci.org/puppetlabs/puppetlabs-firewall)
 
 #### Table of Contents
 
@@ -49,9 +49,9 @@ Firewall uses Ruby-based providers, so you must enable [pluginsync](http://docs.
 
 In the following two sections, you create new classes and then create firewall rules related to those classes. These steps are optional but provide a framework for firewall rules, which is helpful if you’re just starting to create them.
 
-If you already have rules in place, then you don’t need to do these two sections. However, be aware of the ordering of your firewall rules. The module will dynamically apply rules in the order they appear in the catalog, meaning a deny rule could be applied before the allow rules. This might mean the module hasn’t established some of the important connections, such as the connection to the Puppet master.
+If you already have rules in place, then you don’t need to do these two sections. However, be aware of the ordering of your firewall rules. The module will dynamically apply rules in the order they appear in the catalog, meaning a deny rule could be applied before the allow rules. This might mean the module hasn’t established some of the important connections, such as the connection to the Puppet server.
 
-The following steps are designed to ensure that you keep your SSH and other connections, primarily your connection to your Puppet master. If you create the `pre` and `post` classes described in the first section, then you also need to create the rules described in the second section.
+The following steps are designed to ensure that you keep your SSH and other connections, primarily your connection to your Puppet server. If you create the `pre` and `post` classes described in the first section, then you also need to create the rules described in the second section.
 
 #### Create the `my_fw::pre` and `my_fw::post` Classes
 
@@ -127,7 +127,28 @@ The rules you create here are helpful if you don’t have any existing rules; th
 
 Rules are persisted automatically between reboots, although there are known issues with ip6tables on older Debian/Ubuntu distributions. There are also known issues with ebtables.
 
-1. In site.pp or another top-scope file, add the following code to set up a metatype to purge unmanaged firewall resources. This will clear any existing rules and make sure that only rules defined in Puppet exist on the machine.
+1. Use the following code to set up the default parameters for all of the firewall rules that you will establish later. These defaults will ensure that the `pre` and `post` classes are run in the correct order and avoid locking you out of your box during the first Puppet run.
+
+```puppet
+Firewall {
+  before  => Class['my_fw::post'],
+  require => Class['my_fw::pre'],
+}
+```
+
+2. Declare the `my_fw::pre` and `my_fw::post` classes to satisfy dependencies. You can declare these classes using an external node classifier or the following code:
+
+```puppet
+class { ['my_fw::pre', 'my_fw::post']: }
+```
+
+3. Include the `firewall` class to ensure the correct packages are installed:
+
+```puppet
+class { 'firewall': }
+```
+
+4. If you want to remove unmanaged firewall rules, add the following code to set up a metatype to purge unmanaged firewall resources in your site.pp or another top-scope file. This will clear any existing rules and make sure that only rules defined in Puppet exist on the machine.
 
 ```puppet
 resources { 'firewall':
@@ -168,28 +189,9 @@ resources { 'firewallchain':
 }
 ```
 
-  **Note** - If there are unmanaged rules in unmanaged chains, it will take two Puppet runs for the firewall chain to be purged. This is different than the `purge` parameter available in `firewallchain`.
+> **Note:** If there are unmanaged rules in unmanaged chains, it will take a second Puppet run for the firewall chain to be purged.
 
-2.  Use the following code to set up the default parameters for all of the firewall rules that you will establish later. These defaults will ensure that the `pre` and `post` classes are run in the correct order and avoid locking you out of your box during the first Puppet run.
-
-```puppet
-Firewall {
-  before  => Class['my_fw::post'],
-  require => Class['my_fw::pre'],
-}
-```
-
-3. Declare the `my_fw::pre` and `my_fw::post` classes to satisfy dependencies. You can declare these classes using an external node classifier or the following code:
-
-```puppet
-class { ['my_fw::pre', 'my_fw::post']: }
-```
-
-4. Include the `firewall` class to ensure the correct packages are installed:
-
-```puppet
-class { 'firewall': }
-```
+> **Note:** If you need more fine-grained control about which unmananged rules get removed, investigate the `purge` and `ignore_foreign` parameters available in `firewallchain`.
 
 ### Upgrading
 
@@ -277,7 +279,7 @@ class profile::apache {
 
 Firewall rules may be inverted by prefixing the value of a parameter by "! ". If the value is an array, then every item in the array must be prefixed as iptables does not understand inverting a single value.
 
-Parameters that understand inversion are: connmark, ctstate, destination, dport, dst\_range, dst\_type, iniface, outiface, port, proto, source, sport, src\_range, src\_type, and state.
+Parameters that understand inversion are: connmark, ctstate, destination, dport, dst\_range, dst\_type, iniface, outiface, port, proto, source, sport, src\_range and src\_type.
 
 Examples:
 
@@ -398,7 +400,7 @@ Or
 
 ## Reference
 
-For information on the classes and types, see the [REFERENCE.md](https://github.com/puppetlabs/puppetlabs-firewall/blob/master/REFERENCE.md). For information on the facts, see below.
+For information on the classes and types, see the [REFERENCE.md](https://github.com/puppetlabs/puppetlabs-firewall/blob/main/REFERENCE.md). For information on the facts, see below.
 
 Facts:
 
@@ -420,7 +422,7 @@ Retrieves the version of iptables-persistent from your OS. This is a Debian/Ubun
 
 ## Limitations
 
-For an extensive list of supported operating systems, see [metadata.json](https://github.com/puppetlabs/puppetlabs-firewall/blob/master/metadata.json)
+For an extensive list of supported operating systems, see [metadata.json](https://github.com/puppetlabs/puppetlabs-firewall/blob/main/metadata.json)
 
 ### SLES
 
@@ -473,6 +475,20 @@ To prevent this issue, do not use MCollective to kick off Puppet runs. Use any o
 * Run `puppet agent -t` on the command line.
 * Use a cron job.
 * Click [Run Puppet](https://docs.puppet.com/pe/2016.1/console_classes_groups_running_puppet.html#run-puppet-on-an-individual-node) in the console.
+
+### condition parameter
+
+The `condition` parameter requires `xtables-addons` to be installed locally.
+For ubuntu distributions `xtables-addons-common` package can be installed by running command: `apt-get install xtables-addons-common` or
+running a manifest:
+
+```puppet
+package { 'xtables-addons-common':
+  ensure => 'latest',
+}
+```
+
+For other distributions (RedHat, Debian, Centos etc) manual installation of the `xtables-addons` package is required.
 
 #### Reporting Issues
 

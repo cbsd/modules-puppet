@@ -5,7 +5,43 @@ Puppet::Type.type(:selinux_port).provide(:semanage) do
   # SELinux must be enabled. Is there a way to get a better error message?
   confine selinux: true
 
-  python_command = Facter.value(:selinux_python_command)
+  # Determine the appropriate python command
+  def self.python_command
+    @python_command ||= nil
+    return @python_command if @python_command
+
+    # Find the correct version of python on the system
+    python_paths = [
+      '/usr/libexec/platform-python',
+      'python',
+      'python3',
+      'python2'
+    ]
+
+    valid_paths = []
+
+    python_paths.each do |pypath|
+      candidate = Puppet::Util.which(pypath)
+
+      next unless candidate
+      valid_paths << candidate
+
+      if Puppet::Util::Execution.execute("#{candidate} -c 'import semanage'", failonfail: false).exitstatus.zero?
+        @python_command = candidate
+        break
+      end
+    end
+
+    return @python_command if @python_command
+
+    # Since this is used in 'instances', we have to shrug and hope for the
+    # best unless we want runs to fail until the system is 100% correct.
+    # So far, it does not appear to hurt anything in practice and preserves the
+    # behavior from previous releases that hard coded the path into the python
+    # script.
+    valid_paths.first
+  end
+
   # current file path is lib/puppet/provider/selinux_port/semanage.rb
   # semanage_ports.py is lib/puppet_x/voxpupuli/selinux/semanage_ports.py
   PORTS_HELPER = File.expand_path('../../../../puppet_x/voxpupuli/selinux/semanage_ports.py', __FILE__)

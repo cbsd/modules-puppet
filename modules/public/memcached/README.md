@@ -6,7 +6,7 @@ Manage memcached via Puppet
 If you find this module useful, send some bitcoins to 1Na3YFUmdxKxJLiuRXQYJU2kiNqA3KY2j9
 
 ### Supported Puppet versions
-* Puppet >= 4
+* Puppet >= 5
 * Last version supporting Puppet 3: v3.0.2
 
 ## How to use
@@ -40,6 +40,75 @@ To change this behavior, you need to set listen_ip to '0.0.0.0'.
     }
 ```
 
+### Install multiple memcached instances
+
+the multiinstance support uses a systemd instance unit file. This will be placed
+at `/etc/systemd/system/memcached@.service`. It allows us to manage multiple
+instances via the same unit file. To start a simple instance, you only need to
+know the desired TCP port:
+
+```puppet
+memcached::instance{'11222':}
+```
+
+that's it! It will bind to localhost and listen to TCP port 11222. You might
+want to tune the systemd limits, for example the number of file descriptors
+(LimitNOFILE) or the number of processes (LimitNPROC):
+
+```puppet
+memcached::instance{'11222':
+  limits => {
+    'LimitNOFILE' => 8192,
+    'LimitNPROC'  => 16384,
+  }
+}
+```
+
+All systemd limits are documented in the [systemd documentation](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Process%20Properties).
+
+Another usecase. Let's assume your name is Eric and you want to change the
+actual memcached parameters, for example to bind it to every interface:
+
+```puppet
+memcached::instance{'11222':
+  override_content => "[Service]\nEnvironment='LISTEN=-l 0.0.0.0'",
+}
+```
+
+Maybe Eric also wants to override the cache size (the unit is MB):
+
+```puppet
+memcached::instance{'11222':
+  override_content => "[Service]\nEnvironment=CACHESIZE=4096\n",
+}
+```
+
+last but not least, Eric might also want to override the maximum amount
+of connections (the default is 1024):
+
+```puppet
+memcached::instance{'11222':
+  override_content => "[Service]\nEnvironment=MAXCONN=4096\n",
+}
+```
+
+Now Eric wants to use all those three settings at the same time:
+
+```puppet
+memcached::instance{'11222':
+  override_content => "[Service]\nEnvironment=MAXCONN=4096\nEnvironment=CACHESIZE=4096\nEnvironment='LISTEN=-l 0.0.0.0'\n",
+}
+```
+
+Instead of passing a long string with multiple `\n`, Eric can also put the
+content in a file and provide that:
+
+```puppet
+memcached::instance{'11222':
+  override_source => "${module_name}/memcached_11222_override.conf\n",
+}
+```
+
 ### Other class parameters
 
 * $package_ensure = 'present'
@@ -51,9 +120,10 @@ To change this behavior, you need to set listen_ip to '0.0.0.0'.
 * $min_item_size = false
 * $factor = false
 * $lock_memory = false (WARNING: good if used intelligently, google for -k key)
-* $listen_ip = '127.0.0.1'
+* $listen = '127.0.0.1' (if TLS/SSL is enabled, 'notls' prefix can be used to disable for specific listeners "notls:<ip>:<port>")
+* $listen_ip = '127.0.0.1' (deprecated, listen will take precedence over this)
 * $tcp_port = 11211
-* $udp_port = 11211
+* $udp_port = 0
 * $manage_firewall = false
 * $user = '' (OS specific setting, see params.pp)
 * $max_connections = 8192

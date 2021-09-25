@@ -7,7 +7,7 @@
 #   Controls the state of the ipv6 iptables service on your system. Valid options: 'running' or 'stopped'. Defaults to 'running'.
 #
 # @param pkg_ensure
-#   Controls the state of the iptables package on your system. Valid options: 'present' or 'latest'. Defaults to 'latest'.
+#   Controls the state of the iptables package on your system. Valid options: 'installed' or 'latest'. Defaults to 'latest'.
 #
 # @param service_name
 #   Specify the name of the IPv4 iptables service. Defaults defined in firewall::params.
@@ -26,10 +26,10 @@
 class firewall::linux (
   $ensure          = running,
   $ensure_v6       = undef,
-  $pkg_ensure      = present,
-  $service_name    = $::firewall::params::service_name,
-  $service_name_v6 = $::firewall::params::service_name_v6,
-  $package_name    = $::firewall::params::package_name,
+  $pkg_ensure      = installed,
+  $service_name    = $firewall::params::service_name,
+  $service_name_v6 = $firewall::params::service_name_v6,
+  $package_name    = $firewall::params::package_name,
   $ebtables_manage = false,
 ) inherits ::firewall::params {
   $enable = $ensure ? {
@@ -40,8 +40,8 @@ class firewall::linux (
   $_ensure_v6 = pick($ensure_v6, $ensure)
 
   $_enable_v6 = $_ensure_v6 ? {
-    running => true,
-    stopped => false,
+    'running' => true,
+    'stopped' => false,
   }
 
   package { 'iptables':
@@ -57,7 +57,7 @@ class firewall::linux (
   case $::operatingsystem {
     'RedHat', 'CentOS', 'Fedora', 'Scientific', 'SL', 'SLC', 'Ascendos',
     'CloudLinux', 'PSBM', 'OracleLinux', 'OVS', 'OEL', 'Amazon', 'XenServer',
-    'VirtuozzoLinux': {
+    'VirtuozzoLinux', 'Rocky': {
       class { "${title}::redhat":
         ensure          => $ensure,
         ensure_v6       => $_ensure_v6,

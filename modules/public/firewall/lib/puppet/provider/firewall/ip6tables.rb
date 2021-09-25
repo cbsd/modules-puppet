@@ -1,7 +1,10 @@
+# frozen_string_literal: true
+
 Puppet::Type.type(:firewall).provide :ip6tables, parent: :iptables, source: :ip6tables do
   @doc = 'Ip6tables type provider'
 
   has_feature :iptables
+  has_feature :condition
   has_feature :connection_limiting
   has_feature :conntrack
   has_feature :hop_limiting
@@ -65,7 +68,7 @@ Puppet::Type.type(:firewall).provide :ip6tables, parent: :iptables, source: :ip6
 
   def initialize(*args)
     ip6tables_version = Facter.value('ip6tables_version')
-    raise ArgumentError, 'The ip6tables provider is not supported on version 1.3 of iptables' if ip6tables_version && ip6tables_version.match(%r{1\.3\.\d})
+    raise ArgumentError, 'The ip6tables provider is not supported on version 1.3 of iptables' if ip6tables_version&.match(%r{1\.3\.\d})
     super
   end
 
@@ -83,6 +86,7 @@ Puppet::Type.type(:firewall).provide :ip6tables, parent: :iptables, source: :ip6
     burst: '--limit-burst',
     checksum_fill: '--checksum-fill',
     clamp_mss_to_pmtu: '--clamp-mss-to-pmtu',
+    condition: '--condition',
     connlimit_above: '-m connlimit --connlimit-above',
     connlimit_mask: '--connlimit-mask',
     connmark: '-m connmark --mark',
@@ -139,6 +143,7 @@ Puppet::Type.type(:firewall).provide :ip6tables, parent: :iptables, source: :ip6
     proto: '-p',
     queue_num: '--queue-num',
     queue_bypass: '--queue-bypass',
+    random_fully: '--random-fully',
     rdest: '--rdest',
     reap: '--reap',
     recent: '-m recent',
@@ -218,6 +223,7 @@ Puppet::Type.type(:firewall).provide :ip6tables, parent: :iptables, source: :ip6
     :log_tcp_sequence,
     :log_tcp_options,
     :log_ip_options,
+    :random_fully,
     :rsource,
     :rdest,
     :reap,
@@ -250,6 +256,7 @@ Puppet::Type.type(:firewall).provide :ip6tables, parent: :iptables, source: :ip6
     addrtype: [:src_type, :dst_type],
     iprange: [:src_range, :dst_range],
     owner: [:uid, :gid],
+    condition: [:condition],
     conntrack: [:ctstate, :ctproto, :ctorigsrc, :ctorigdst, :ctreplsrc, :ctrepldst,
                 :ctorigsrcport, :ctorigdstport, :ctreplsrcport, :ctrepldstport, :ctstatus, :ctexpire, :ctdir],
     time: [:time_start, :time_stop, :month_days, :week_days, :date_start, :date_stop, :time_contiguous, :kernel_timezone],
@@ -303,10 +310,10 @@ Puppet::Type.type(:firewall).provide :ip6tables, parent: :iptables, source: :ip6
                     :icmp, :hop_limit, :limit, :burst, :length, :recent, :rseconds, :reap,
                     :rhitcount, :rttl, :rname, :mask, :rsource, :rdest, :ipset, :string, :string_hex, :string_algo,
                     :string_from, :string_to, :jump, :nflog_group, :nflog_prefix, :nflog_range, :nflog_threshold, :clamp_mss_to_pmtu, :gateway, :todest,
-                    :tosource, :toports, :checksum_fill, :log_level, :log_prefix, :log_uid, :log_tcp_sequence, :log_tcp_options, :log_ip_options,
+                    :tosource, :toports, :checksum_fill, :log_level, :log_prefix, :log_uid, :log_tcp_sequence, :log_tcp_options, :log_ip_options, :random_fully,
                     :reject, :set_mss, :set_dscp, :set_dscp_class, :mss, :queue_num, :queue_bypass,
                     :set_mark, :match_mark, :connlimit_above, :connlimit_mask, :connmark, :time_start, :time_stop, :month_days, :week_days, :date_start, :date_stop, :time_contiguous, :kernel_timezone,
                     :src_cc, :dst_cc, :hashlimit_upto, :hashlimit_above, :hashlimit_name, :hashlimit_burst,
                     :hashlimit_mode, :hashlimit_srcmask, :hashlimit_dstmask, :hashlimit_htable_size,
-                    :hashlimit_htable_max, :hashlimit_htable_expire, :hashlimit_htable_gcinterval, :bytecode, :zone, :helper, :rpfilter, :name, :notrack]
+                    :hashlimit_htable_max, :hashlimit_htable_expire, :hashlimit_htable_gcinterval, :bytecode, :zone, :helper, :rpfilter, :condition, :name, :notrack]
 end

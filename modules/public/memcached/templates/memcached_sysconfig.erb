@@ -6,8 +6,8 @@ end
 if @lock_memory
   result << '-k'
 end
-if @real_listen_ip
-  result << '-l ' + @real_listen_ip.join(',')
+if @real_listen
+  result << '-l ' + @real_listen.join(',')
 end
 if @udp_port
   result << '-U ' + @udp_port.to_s
@@ -39,6 +39,9 @@ if @use_tls
     result << '-o ssl_ca_cert=' + @tls_ca_cert
   end
   result << '-o ssl_verify_mode=' + @tls_verify_mode.to_s
+end
+if @use_sasl
+  result << '-S'
 end
 
 if !@logstdout
