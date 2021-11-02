@@ -67,9 +67,14 @@
 #   Specifies an array of optional arguments which should be passed through to the backup tool. (Supported by the xtrabackup and mysqldump providers.)
 # @param install_cron
 #   Manage installation of cron package
+# @param compression_command
+#   Configure the command used to compress the backup (when using the mysqldump provider). Make sure the command exists
+#   on the target system. Packages for it are NOT automatically installed.
+# @param compression_extension
+#   Configure the file extension for the compressed backup (when using the mysqldump provider)
 class mysql::server::backup (
   $backupuser               = undef,
-  $backuppassword           = undef,
+  Optional[Variant[String, Sensitive[String]]] $backuppassword = undef,
   $backupdir                = undef,
   $backupdirmode            = '0700',
   $backupdirowner           = 'root',
@@ -94,40 +99,42 @@ class mysql::server::backup (
   $optional_args            = [],
   $incremental_backups      = true,
   $install_cron             = true,
+  $compression_command      = undef,
+  $compression_extension    = undef
 ) inherits mysql::params {
-
   if $prescript and $provider =~ /(mysqldump|mysqlbackup)/ {
-    warning(translate("The 'prescript' option is not currently implemented for the %{provider} backup provider.",
-            {'provider' => $provider}))
+    warning("The 'prescript' option is not currently implemented for the ${provider} backup provider.")
   }
 
   create_resources('class', {
-    "mysql::backup::${provider}" => {
-      'backupuser'               => $backupuser,
-      'backuppassword'           => $backuppassword,
-      'backupdir'                => $backupdir,
-      'backupdirmode'            => $backupdirmode,
-      'backupdirowner'           => $backupdirowner,
-      'backupdirgroup'           => $backupdirgroup,
-      'backupcompress'           => $backupcompress,
-      'backuprotate'             => $backuprotate,
-      'backupmethod'             => $backupmethod,
-      'backup_success_file_path' => $backup_success_file_path,
-      'ignore_events'            => $ignore_events,
-      'delete_before_dump'       => $delete_before_dump,
-      'backupdatabases'          => $backupdatabases,
-      'file_per_database'        => $file_per_database,
-      'include_routines'         => $include_routines,
-      'include_triggers'         => $include_triggers,
-      'ensure'                   => $ensure,
-      'time'                     => $time,
-      'prescript'                => $prescript,
-      'postscript'               => $postscript,
-      'execpath'                 => $execpath,
-      'maxallowedpacket'         => $maxallowedpacket,
-      'optional_args'            => $optional_args,
-      'incremental_backups'      => $incremental_backups,
-      'install_cron'             => $install_cron,
-    }
+      "mysql::backup::${provider}" => {
+        'backupuser'               => $backupuser,
+        'backuppassword'           => $backuppassword,
+        'backupdir'                => $backupdir,
+        'backupdirmode'            => $backupdirmode,
+        'backupdirowner'           => $backupdirowner,
+        'backupdirgroup'           => $backupdirgroup,
+        'backupcompress'           => $backupcompress,
+        'backuprotate'             => $backuprotate,
+        'backupmethod'             => $backupmethod,
+        'backup_success_file_path' => $backup_success_file_path,
+        'ignore_events'            => $ignore_events,
+        'delete_before_dump'       => $delete_before_dump,
+        'backupdatabases'          => $backupdatabases,
+        'file_per_database'        => $file_per_database,
+        'include_routines'         => $include_routines,
+        'include_triggers'         => $include_triggers,
+        'ensure'                   => $ensure,
+        'time'                     => $time,
+        'prescript'                => $prescript,
+        'postscript'               => $postscript,
+        'execpath'                 => $execpath,
+        'maxallowedpacket'         => $maxallowedpacket,
+        'optional_args'            => $optional_args,
+        'incremental_backups'      => $incremental_backups,
+        'install_cron'             => $install_cron,
+        'compression_command'      => $compression_command,
+        'compression_extension'    => $compression_extension,
+      }
   })
 }

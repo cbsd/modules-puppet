@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require File.expand_path(File.join(File.dirname(__FILE__), '..', 'mysql'))
 Puppet::Type.type(:mysql_datadir).provide(:mysql, parent: Puppet::Provider::Mysql) do
   desc 'manage data directories for mysql instances'
@@ -9,6 +11,8 @@ Puppet::Type.type(:mysql_datadir).provide(:mysql, parent: Puppet::Provider::Mysq
     ENV['PATH'],
     '/usr/libexec',
     '/usr/share/mysql/scripts',
+    '/opt/rh/rh-mysql80/root/usr/bin',
+    '/opt/rh/rh-mysql80/root/usr/libexec',
     '/opt/rh/rh-mysql57/root/usr/bin',
     '/opt/rh/rh-mysql57/root/usr/libexec',
     '/opt/rh/rh-mysql56/root/usr/bin',
