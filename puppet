@@ -1,7 +1,7 @@
 #!/usr/local/bin/cbsd
 #v12.1.13
 MYARG="jname"
-MYOPTARG="mode formfile debug_form module"
+MYOPTARG="mode formfile debug_form module gen_hiera"
 MYDESC="Generate puppet manifests"
 ADDHELP=" module= specify module name\n\
  mode= apply - puppet apply\n\
@@ -183,7 +183,7 @@ puppet_setup()
 
 		if [ "${puppet_apply_method}" != "local" ]; then
 			if [ ! -x ${data}/usr/local/bin/puppet ]; then
-				jexec jname=${jname} env ASSUME_ALWAYS_YES=yes pkg install -y sysutils/puppet6
+				jexec jname=${jname} env ASSUME_ALWAYS_YES=yes pkg install -y sysutils/puppet7
 			fi
 		fi
 	fi
@@ -224,9 +224,13 @@ EOF
 		${ECHO} "${N1_COLOR}generate manifest and save to: ${N2_COLOR}${local_puppet_manifest_dir}/${module}.pp${N0_COLOR}"
 		generate_manifest > ${jail_manifest}
 		${CP_CMD} ${jail_manifest} ${local_puppet_manifest_dir}/${module}.pp
-		${ECHO} "${N1_COLOR}generate hieradata and save to: ${N2_COLOR}${local_puppet_hieradata_dir}/${module}.yaml${N0_COLOR}"
-		generate_hieradata > ${jail_hieradata}
-		${CP_CMD} ${jail_hieradata} ${local_puppet_hieradata_dir}/${module}.yaml
+		if [ ${gen_hiera} -eq 1 ]; then
+			${ECHO} "${N1_COLOR}generate hieradata (${gen_hiera}) and save to: ${N2_COLOR}${local_puppet_hieradata_dir}/${module}.yaml${N0_COLOR}"
+			generate_hieradata > ${jail_hieradata}
+			${CP_CMD} ${jail_hieradata} ${local_puppet_hieradata_dir}/${module}.yaml
+		else
+			${CP_CMD} ${local_puppet_hieradata_dir}/${module}.yaml ${jail_hieradata}
+		fi
 	else
 		[ ! -r ${local_puppet_manifest_dir}/init.pp ] && err 1 "${N1_COLOR}no such local manifest: ${N2_COLOR}${local_puppet_manifest_dir}/init.pp${N0_COLOR}"
 	fi
@@ -262,6 +266,7 @@ EOF
 # MAIN
 debug_form=0
 . ${cbsdinit}
+[ -z "${gen_hiera}" ] && gen_hiera=1
 
 readconf puppetd.conf
 
@@ -280,22 +285,25 @@ esac
 
 if [ -n "${module}" ]; then
 	[ -z "${formfile}" ] && formfile="${jailsysdir}/${jname}/helpers/${module}.sqlite"
-	[ ! -r ${formfile} ] && err 1 "${N0_COLOR}${CBSD_APP}: no such formfile: ${N2_COLOR}${formfile}${N0_COLOR}"
 	my_module_dir="${distmoduledir}/forms.d/${module}"
 	sitepp="${my_module_dir}/site.pp"
-	[ ! -r ${sitepp} ] && err 1 "${N1_COLOR}${CBSD_APP}: no such site.pp: ${N2_COLOR}${sitepp}${N0_COLOR}"
 
+	[ ! -r ${sitepp} ] && err 1 "${N1_COLOR}${CBSD_APP}: no such site.pp: ${N2_COLOR}${sitepp}${N0_COLOR}"
 	. ${sitepp}
 
 	mksitefile="${distmoduledir}/forms.d/${module}/site.pp"
 
-	. ${subrdir}/imghelper.subr
+	# not manually managed
+	if [ ${gen_hiera} -eq 1 ]; then
+		[ ! -r ${formfile} ] && err 1 "${N0_COLOR}${CBSD_APP}: no such formfile: ${N2_COLOR}${formfile}${N0_COLOR}"
+		. ${subrdir}/imghelper.subr
 
-	readconf helpers.conf
+		readconf helpers.conf
 
-	param=$( cbsdsqlro ${formfile} SELECT param FROM forms ORDER BY CAST\(order_id AS int\) | ${XARGS_CMD} )
-	load_forms
-	load_new
+		param=$( cbsdsqlro ${formfile} SELECT param FROM forms ORDER BY CAST\(order_id AS int\) | ${XARGS_CMD} )
+		load_forms
+		load_new
+	fi
 fi
 
 local_puppet_dir="${jailsysdir}/${jname}/puppet"
@@ -313,7 +321,10 @@ case "${mode}" in
 			${ECHO} "${N1_COLOR}applying puppet manifest from: ${N2_COLOR}${local_puppet_manifest_dir}/init.pp${N0_COLOR}"
 		fi
 		[ -z "${puppet_apply_method}" ] && puppet_apply_method="local"
-		merge_new
+		# not manually managed
+		if [ ${gen_hiera} -eq 1 ]; then
+			merge_new
+		fi
 		puppet_setup
 		;;
 	*)
