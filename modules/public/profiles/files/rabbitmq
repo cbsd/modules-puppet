@@ -73,7 +73,9 @@ rabbitmq_stop()
 {
         echo "Stopping ${name}."
         debug "Running: ${rabbitmq_ctl} shutdown"
-        timeout 30 su -m ${rabbitmq_user} -c "${rabbitmq_ctl} shutdown" >/dev/null 2>&1
+        timeout 30 su -m ${rabbitmq_user} -c "${rabbitmq_ctl} shutdown" >/dev/null 2>&1 || true
+        killall -9 beam.smp || true
+	return 0
 }
 
 run_rc_command "$1"
