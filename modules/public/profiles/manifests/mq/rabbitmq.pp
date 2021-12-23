@@ -8,6 +8,33 @@ class profiles::mq::rabbitmq (
   Hash $plugins = {},
 ){
 
+  case $::osfamily {
+    'FreeBSD': {
+
+      # avoid collisiin in package name: 'rabbitmq' from rabbitmq::install
+      package { 'net/rabbitmq':
+        ensure => installed,
+      } -> file { '/usr/local/etc/rc.d/rabbitmq':
+             ensure => present,
+             mode   => '0755',
+             owner  => 'root',
+             group  => 'wheel',
+             source => 'puppet:///modules/profiles/rabbitmq',
+           } -> file { '/root/.erlang.cookie':
+                  ensure => link,
+                  target => '/var/db/rabbitmq/.erlang.cookie',
+                } -> file { '/tmp/.erlang.cookie':
+                       ensure => link,
+                       target => '/var/db/rabbitmq/.erlang.cookie',
+                     }
+        file_line { 'rabbitmq_enable':
+          path     => '/etc/rc.conf',
+          match    => 'rabbitmq_enable',
+          line     => "rabbitmq_enable=\"YES\"",
+        }
+
+     }
+  }
   class { '::rabbitmq':
     * => $globals,
   }
