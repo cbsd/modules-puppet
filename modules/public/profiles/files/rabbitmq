@@ -28,7 +28,7 @@ pidfile="/var/run/${name}.pid"
 start_cmd="${name}_start"
 stop_cmd="${name}_stop"
 rotate_logs_cmd="su -m ${rabbitmq_user} -c 'sh -c \"${rabbitmq_ctl} rotate_logs\"'"
-status_cmd="su -m ${rabbitmq_user} -c 'sh -c \"${rabbitmq_ctl} status\"'"
+status_cmd="timeout 30 su -m ${rabbitmq_user} -c 'sh -c \"${rabbitmq_ctl} status\"'"
 extra_commands="rotate_logs status"
 
 # ensure scripts find erlang_cookie
