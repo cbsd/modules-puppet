@@ -137,7 +137,7 @@ puppet_setup()
 			if [ ${jid} -eq 0 ]; then
 				case ${emulator} in
 					jail)
-						jstart jname=${jname}
+						jstart jname="${jname}"
 						_was_started=0
 						;;
 					*)
@@ -263,6 +263,49 @@ EOF
 	esac
 }
 
+# todo
+puppet_pass()
+{
+	local _was_started
+
+	[ ${baserw} -eq 1 ] && path="${data}"
+	[ -z "${path}" ] && err 1 "${N1_COLOR}${CBSD_APP}: no path variable: ${N2_COLOR}${jname}${N0_COLOR}"
+
+	if [ ${jid} -eq 0 ]; then
+		case ${emulator} in
+			jail)
+				jstart jname="${jname}"
+				_was_started=0
+				;;
+			*)
+				err 1 "${N1_COLOR}${CBSD_APP}: vm is not running: ${N2_COLOR}${jname}${N0_COLOR}"
+				;;
+		esac
+	else
+		_was_started=1
+	fi
+
+	for i in ${path}/tmp/cbsdpuppet ${path}/tmp/puppet; do
+		[ ! -d ${i} ] && ${MKDIR_CMD} -p ${i}
+	done
+
+	if is_mounted ${path}/tmp/cbsdpuppet; then
+		${UMOUNT_CMD} -f ${path}/tmp/cbsdpuppet
+	fi
+	if is_mounted ${path}/tmp/puppet; then
+		${UMOUNT_CMD} -f ${path}/tmp/puppet
+	fi
+
+	${MOUNT_CMD} -t nullfs -oro /usr/local/cbsd/modules/puppet.d ${path}/tmp/cbsdpuppet
+	${MOUNT_CMD} -t nullfs -oro ${workdir}/jails-data/cbsdpuppet1-data/usr/local ${path}/tmp/puppet
+
+	jexec jname=${jname} env LANG=en_US.UTF-8 /tmp/cbsdpuppet/pass
+
+	${UMOUNT_CMD} -f ${path}/tmp/cbsdpuppet
+	${UMOUNT_CMD} -f ${path}/tmp/puppet
+}
+
+
 # MAIN
 debug_form=0
 . ${cbsdinit}
@@ -314,7 +357,7 @@ local_puppet_hieradata_dir="${local_puppet_dir}/hieradata"
 [ ! -d ${local_puppet_hieradata_dir} ] && ${MKDIR_CMD} -p ${local_puppet_hieradata_dir}
 
 case "${mode}" in
-	"apply")
+	apply)
 		if [ -n "${module}" ]; then
 			${ECHO} "${N1_COLOR}applying puppet manifest for: ${N2_COLOR}${module}${N0_COLOR}"
 		else
@@ -326,6 +369,9 @@ case "${mode}" in
 			merge_new
 		fi
 		puppet_setup
+		;;
+	pass)
+		puppet_pass
 		;;
 	*)
 		[ -z "${module}" ] && err 1 "${N1_COLOR}specify module=${N0_COLOR}"
