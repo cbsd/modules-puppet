@@ -3,7 +3,6 @@
 # @api private
 #
 class apt::params {
-
   if $facts['os']['family'] != 'Debian' {
     fail('This module only works on Debian or derivatives like Ubuntu')
   }
@@ -44,7 +43,7 @@ class apt::params {
     'list'   => {
       'path' => $sources_list_d,
       'ext'  => '.list',
-    }
+    },
   }
 
   $update_defaults = {
@@ -76,7 +75,7 @@ class apt::params {
     'src' => false,
   }
 
-  case $facts['os']['name']{
+  case $facts['os']['name'] {
     'Debian': {
           $backports = {
             'location' => 'http://deb.debian.org/debian',
@@ -84,11 +83,7 @@ class apt::params {
           }
       $ppa_options = undef
       $ppa_package = undef
-      if versioncmp($facts['os']['release']['major'], '9') >= 0 {
-        $auth_conf_owner = '_apt'
-      } else {
-        $auth_conf_owner = 'root'
-      }
+      $auth_conf_owner = '_apt'
     }
     'Ubuntu': {
       $backports = {
@@ -98,11 +93,7 @@ class apt::params {
       }
       $ppa_options        = '-y'
       $ppa_package        = 'software-properties-common'
-      if versioncmp($facts['os']['release']['full'], '16.04') >= 0 {
-        $auth_conf_owner = '_apt'
-      } else {
-        $auth_conf_owner = 'root'
-      }
+      $auth_conf_owner = '_apt'
     }
     undef: {
       fail('Unable to determine value for fact os[\"name\"]')
