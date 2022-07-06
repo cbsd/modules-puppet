@@ -41,6 +41,7 @@ be manipulated through the `apt-key` command.
 
 * [`Apt::Auth_conf_entry`](#aptauth_conf_entry): Login configuration settings that are recorded in the file `/etc/apt/auth.conf`.
 * [`Apt::Proxy`](#aptproxy): Configures Apt to connect to a proxy server.
+* [`Apt::Proxy_Per_Host`](#aptproxy_per_host): Adds per-host overrides to the system default APT proxy configuration
 
 ### Tasks
 
@@ -431,7 +432,7 @@ Default value: ``undef``
 Data type: `Optional[String]`
 
 Specifies a distribution of the Apt repository containing the backports to manage. Used in populating the `source.list` configuration file.
-Default: on Debian and Ubuntu, `${facts['os']['distro']['codename']}-backports`. We recommend keeping this default, except on other operating
+Default: on Debian and Ubuntu, `${fact('os.distro.codename')}-backports`. We recommend keeping this default, except on other operating
 systems.
 
 Default value: ``undef``
@@ -813,7 +814,7 @@ Data type: `Optional[String]`
 Specifies the operating system of your node. Valid options: a string containing a valid LSB distribution codename.
 Optional if `puppet facts show os.distro.codename` returns your correct distribution release codename.
 
-Default value: `$facts['os']['distro']['codename']`
+Default value: `fact('os.distro.codename')`
 
 ##### <a name="dist"></a>`dist`
 
@@ -935,6 +936,7 @@ The following parameters are available in the `apt::source` defined type:
 * [`architecture`](#architecture)
 * [`allow_unsigned`](#allow_unsigned)
 * [`notify_update`](#notify_update)
+* [`allow_insecure`](#allow_insecure)
 
 ##### <a name="location"></a>`location`
 
@@ -1043,6 +1045,14 @@ Specifies whether to trigger an `apt-get update` run.
 
 Default value: ``true``
 
+##### <a name="allow_insecure"></a>`allow_insecure`
+
+Data type: `Boolean`
+
+
+
+Default value: ``false``
+
 ## Resource types
 
 ## Data types
@@ -1099,6 +1109,7 @@ Struct[{
     https      => Optional[Boolean],
     https_acng => Optional[Boolean],
     direct     => Optional[Boolean],
+    perhost    => Optional[Array[Apt::Proxy_Per_Host]],
   }]
 ```
 
@@ -1131,6 +1142,52 @@ Specifies whether to enable https proxies.
 ##### <a name="direct"></a>`direct`
 
 Specifies whether or not to use a `DIRECT` https proxy if http proxy is used but https is not.
+
+### <a name="aptproxy_per_host"></a>`Apt::Proxy_Per_Host`
+
+Adds per-host overrides to the system default APT proxy configuration
+
+Alias of
+
+```puppet
+Struct[{
+    scope      => String,
+    host       => Optional[String],
+    port       => Optional[Integer[1, 65535]],
+    https      => Optional[Boolean],
+    direct     => Optional[Boolean],
+  }]
+```
+
+#### Parameters
+
+The following parameters are available in the `Apt::Proxy_Per_Host` data type:
+
+* [`scope`](#scope)
+* [`host`](#host)
+* [`port`](#port)
+* [`https`](#https)
+* [`direct`](#direct)
+
+##### <a name="scope"></a>`scope`
+
+Specifies the scope of the override.  Valid options: a string containing a hostname.
+
+##### <a name="host"></a>`host`
+
+Specifies a proxy host to be stored in `/etc/apt/apt.conf.d/01proxy`. Valid options: a string containing a hostname.
+
+##### <a name="port"></a>`port`
+
+Specifies a proxy port to be stored in `/etc/apt/apt.conf.d/01proxy`. Valid options: an integer containing a port number.
+
+##### <a name="https"></a>`https`
+
+Specifies whether to enable https for this override.
+
+##### <a name="direct"></a>`direct`
+
+Specifies whether or not to use a `DIRECT` target to bypass the system default proxy.
 
 ## Tasks
 

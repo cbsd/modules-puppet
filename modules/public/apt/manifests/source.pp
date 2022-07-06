@@ -58,28 +58,28 @@
 # @param notify_update
 #   Specifies whether to trigger an `apt-get update` run.
 #
-define apt::source(
+define apt::source (
   Optional[String] $location                    = undef,
   String $comment                               = $name,
   String $ensure                                = present,
   Optional[String] $release                     = undef,
   String $repos                                 = 'main',
-  Optional[Variant[Hash]] $include              = {},
+  Variant[Hash] $include                        = {},
   Optional[Variant[String, Hash]] $key          = undef,
   Optional[Stdlib::AbsolutePath] $keyring       = undef,
   Optional[Variant[Hash, Numeric, String]] $pin = undef,
   Optional[String] $architecture                = undef,
   Boolean $allow_unsigned                       = false,
+  Boolean $allow_insecure                       = false,
   Boolean $notify_update                        = true,
 ) {
-
   include ::apt
 
   $_before = Apt::Setting["list-${title}"]
 
   if !$release {
-    if $facts['os']['distro']['codename'] {
-      $_release = $facts['os']['distro']['codename']
+    if fact('os.distro.codename') {
+      $_release = fact('os.distro.codename')
     } else {
       fail('os.distro.codename fact not available: release parameter required')
     }
@@ -98,9 +98,10 @@ define apt::source(
       $_location = $location
     }
     # Newer oses, do not need the package for HTTPS transport.
-    $_transport_https_releases = [ 'wheezy', 'jessie', 'stretch', 'trusty', 'xenial' ]
-    if ($facts['os']['distro']['codename'] in $_transport_https_releases) and $_location =~ /(?i:^https:\/\/)/ {
+    $_transport_https_releases = ['9']
+    if (fact('os.release.major') in $_transport_https_releases) and $_location =~ /(?i:^https:\/\/)/ {
       ensure_packages('apt-transport-https')
+      Package['apt-transport-https'] -> Class['apt::update']
     }
   } else {
     $_location = undef
@@ -109,7 +110,7 @@ define apt::source(
   $includes = merge($::apt::include_defaults, $include)
 
   if $key and $keyring {
-    fail("parameters key and keyring are mutualy exclusive")
+    fail('parameters key and keyring are mutualy exclusive')
   }
 
   if $key {
@@ -125,14 +126,22 @@ define apt::source(
 
   $header = epp('apt/_header.epp')
 
+  if $architecture {
+    $_architecture = regsubst($architecture, '\baarch64\b', 'arm64')
+  } else {
+    $_architecture = undef
+  }
+
   $sourcelist = epp('apt/source.list.epp', {
     'comment'          => $comment,
     'includes'         => $includes,
-    'options'          => delete_undef_values({
-      'arch'      => $architecture,
-      'trusted'   => $allow_unsigned ? {true => "yes", false => undef},
-      'signed-by' => $keyring,
-    }),
+    'options'          => delete_undef_values( {
+        'arch'           => $architecture,
+        'trusted'        => $allow_unsigned ? { true => 'yes', false => undef },
+        'allow-insecure' => $allow_insecure ? { true => 'yes', false => undef },
+        'signed-by'      => $keyring,
+      },
+    ),
     'location'         => $_location,
     'release'          => $_release,
     'repos'            => $repos,

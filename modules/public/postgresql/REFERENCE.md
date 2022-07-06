@@ -31,6 +31,7 @@
 * `postgresql::server::config`
 * `postgresql::server::initdb`
 * `postgresql::server::install`
+* `postgresql::server::late_initdb`: Manage the default encoding when database initialization is managed by the package
 * `postgresql::server::passwd`
 * `postgresql::server::reload`
 * `postgresql::server::service`
@@ -863,7 +864,7 @@ The following parameters are available in the `postgresql::server` class:
 
 ##### <a name="postgres_password"></a>`postgres_password`
 
-Data type: `Any`
+Data type: `Optional[Variant[String[1], Sensitive[String[1]], Integer]]`
 
 Sets the password for the postgres user to your specified value. By default, this setting uses the superuser account in the Postgres database, with a user called postgres and no password.
 
@@ -1329,7 +1330,7 @@ The following parameters are available in the `postgresql::server::contrib` clas
 
 ##### <a name="package_name"></a>`package_name`
 
-Data type: `String`
+Data type: `Optional[String[1]]`
 
 The name of the PostgreSQL contrib package.
 
@@ -1646,7 +1647,7 @@ User to create and assign access to the database upon creation. Mandatory.
 
 ##### <a name="password"></a>`password`
 
-Data type: `Any`
+Data type: `Variant[String, Sensitive[String]]`
 
 Required Sets the password for the created user.
 
@@ -1730,6 +1731,7 @@ Manage a database defaults privileges. Only works with PostgreSQL version 9.6 an
 
 The following parameters are available in the `postgresql::server::default_privileges` defined type:
 
+* [`target_role`](#target_role)
 * [`ensure`](#ensure)
 * [`role`](#role)
 * [`db`](#db)
@@ -1743,6 +1745,14 @@ The following parameters are available in the `postgresql::server::default_privi
 * [`connect_settings`](#connect_settings)
 * [`psql_path`](#psql_path)
 * [`group`](#group)
+
+##### <a name="target_role"></a>`target_role`
+
+Data type: `Optional[String]`
+
+Target role whose created objects will receive the default privileges. Defaults to the current user.
+
+Default value: ``undef``
 
 ##### <a name="ensure"></a>`ensure`
 
@@ -1773,7 +1783,8 @@ Data type: `Pattern[
     /(?i:^ROUTINES$)/,
     /(?i:^SEQUENCES$)/,
     /(?i:^TABLES$)/,
-    /(?i:^TYPES$)/
+    /(?i:^TYPES$)/,
+    /(?i:^SCHEMAS$)/
   ]`
 
 Specify target object type: 'FUNCTIONS', 'ROUTINES', 'SEQUENCES', 'TABLES', 'TYPES'.
@@ -1788,7 +1799,7 @@ Specifies comma-separated list of privileges to grant. Valid options: depends on
 
 Data type: `String`
 
-Target schema. Defaults to 'public'.
+Target schema. Defaults to 'public'. Can be set to '' to apply to all schemas.
 
 Default value: `'public'`
 
@@ -2560,6 +2571,8 @@ The following parameters are available in the `postgresql::server::role` defined
 * [`psql_group`](#psql_group)
 * [`psql_path`](#psql_path)
 * [`module_workdir`](#module_workdir)
+* [`hash`](#hash)
+* [`salt`](#salt)
 
 ##### <a name="update_password"></a>`update_password`
 
@@ -2571,7 +2584,7 @@ Default value: ``true``
 
 ##### <a name="password_hash"></a>`password_hash`
 
-Data type: `Any`
+Data type: `Variant[Boolean, String, Sensitive[String]]`
 
 Sets the hash to use during password creation.
 
@@ -2704,6 +2717,22 @@ Data type: `Any`
 Specifies working directory under which the psql command should be executed. May need to specify if '/tmp' is on volume mounted with noexec option.
 
 Default value: `$postgresql::server::module_workdir`
+
+##### <a name="hash"></a>`hash`
+
+Data type: `Enum['md5', 'scram-sha-256']`
+
+Specify the hash method for pg password
+
+Default value: `'md5'`
+
+##### <a name="salt"></a>`salt`
+
+Data type: `Optional[Variant[String[1], Integer]]`
+
+Specify the salt use for the scram-sha-256 encoding password (default username)
+
+Default value: ``undef``
 
 ### <a name="postgresqlserverschema"></a>`postgresql::server::schema`
 
@@ -2944,7 +2973,7 @@ Default value: ``undef``
 
 ##### <a name="database_password"></a>`database_password`
 
-Data type: `Any`
+Data type: `Optional[Variant[String, Sensitive[String]]]`
 
 Specifies the password to connect with.
 
@@ -3369,23 +3398,41 @@ Type: Ruby 4.x API
 
 This function returns the postgresql password hash from the clear text username / password
 
-#### `postgresql::postgresql_password(Variant[String[1],Integer] $username, Variant[String[1],Integer] $password)`
+#### `postgresql::postgresql_password(Variant[String[1], Integer] $username, Variant[String[1], Sensitive[String[1]], Integer] $password, Optional[Boolean] $sensitive, Optional[Optional[Enum['md5', 'scram-sha-256']]] $hash, Optional[Optional[Variant[String[1], Integer]]] $salt)`
 
 The postgresql::postgresql_password function.
 
-Returns: `String` The postgresql password hash from the clear text username / password.
+Returns: `Variant[String, Sensitive[String]]` The postgresql password hash from the clear text username / password.
 
 ##### `username`
 
-Data type: `Variant[String[1],Integer]`
+Data type: `Variant[String[1], Integer]`
 
 The clear text `username`
 
 ##### `password`
 
-Data type: `Variant[String[1],Integer]`
+Data type: `Variant[String[1], Sensitive[String[1]], Integer]`
 
 The clear text `password`
+
+##### `sensitive`
+
+Data type: `Optional[Boolean]`
+
+If the Postgresql-Passwordhash should be of Datatype Sensitive[String]
+
+##### `hash`
+
+Data type: `Optional[Optional[Enum['md5', 'scram-sha-256']]]`
+
+Set type for password hash
+
+##### `salt`
+
+Data type: `Optional[Optional[Variant[String[1], Integer]]]`
+
+Use a specific salt value for scram-sha-256, default is username
 
 ### <a name="postgresql_escape"></a>`postgresql_escape`
 

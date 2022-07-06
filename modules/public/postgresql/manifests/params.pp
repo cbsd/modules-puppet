@@ -109,7 +109,11 @@ class postgresql::params inherits postgresql::globals {
       $psql_path           = pick($psql_path, "${bindir}/psql")
 
       $perl_package_name   = pick($perl_package_name, 'perl-DBD-Pg')
-      $python_package_name = pick($python_package_name, 'python-psycopg2')
+      if $facts['os']['family'] == 'RedHat' and versioncmp($facts['os']['release']['major'], '8') >= 0 {
+        $python_package_name = pick($python_package_name, 'python3-psycopg2')
+      } else {
+        $python_package_name = pick($python_package_name, 'python-psycopg2')
+      }
 
       if $postgresql::globals::postgis_package_name {
         $postgis_package_name = $postgresql::globals::postgis_package_name
@@ -135,8 +139,6 @@ class postgresql::params inherits postgresql::globals {
       $java_package_name      = pick($java_package_name, 'postgresql-jdbc')
       # Archlinux doesn't have develop packages
       $devel_package_name     = pick($devel_package_name, 'postgresql-devel')
-      # Archlinux does have postgresql-contrib but it isn't maintained
-      $contrib_package_name   = pick($contrib_package_name,'undef')
       # Archlinux postgresql package provides plperl
       $plperl_package_name    = pick($plperl_package_name, 'undef')
       $plpython_package_name  = pick($plpython_package_name, 'undef')
@@ -158,28 +160,11 @@ class postgresql::params inherits postgresql::globals {
       $user               = pick($user, 'postgres')
       $group              = pick($group, 'postgres')
 
-      if $postgresql::globals::manage_package_repo == true {
-        $needs_initdb = pick($needs_initdb, true)
-        $service_name = pick($service_name, 'postgresql')
-      } else {
-        $needs_initdb = pick($needs_initdb, false)
-        $service_name = $facts['os']['name'] ? {
-          'Debian' => pick($service_name, 'postgresql'),
-          'Ubuntu' => $::lsbmajdistrelease ? {
-            /^10/ => pick($service_name, "postgresql-${version}"),
-            default => pick($service_name, 'postgresql'),
-          },
-          default => undef
-        }
-      }
+      $needs_initdb = pick($needs_initdb, $postgresql::globals::manage_package_repo == true)
+      $service_name = pick($service_name, 'postgresql')
 
       $client_package_name    = pick($client_package_name, "postgresql-client-${version}")
       $server_package_name    = pick($server_package_name, "postgresql-${version}")
-      if $facts['os']['name'] == 'Debian' and $facts['os']['release']['major'] == '10' and $postgresql::globals::manage_package_repo != true {
-        $contrib_package_name = pick($contrib_package_name, 'postgresql-contrib')
-      } else {
-        $contrib_package_name = pick($contrib_package_name, "postgresql-contrib-${version}")
-      }
       if $postgis_version and versioncmp($postgis_version, '2') < 0 {
         $postgis_package_name = pick($postgis_package_name, "postgresql-${version}-postgis")
       } elsif $postgis_version and versioncmp($postgis_version, '3') >= 0 {
@@ -188,13 +173,7 @@ class postgresql::params inherits postgresql::globals {
         $postgis_package_name = pick($postgis_package_name, "postgresql-${version}-postgis-${postgis_version}")
       }
       $devel_package_name     = pick($devel_package_name, 'libpq-dev')
-      $java_package_name = $facts['os']['name'] ? {
-        'Debian' => $facts['os']['release']['major'] ? {
-          '6'     => pick($java_package_name, 'libpg-java'),
-          default => pick($java_package_name, 'libpostgresql-jdbc-java'),
-        },
-        default  => pick($java_package_name, 'libpostgresql-jdbc-java'),
-      }
+      $java_package_name      = pick($java_package_name, 'libpostgresql-jdbc-java')
       $perl_package_name      = pick($perl_package_name, 'libdbd-pg-perl')
       $plperl_package_name    = pick($plperl_package_name, "postgresql-plperl-${version}")
       $plpython_package_name  = pick($plpython_package_name, "postgresql-plpython-${version}")
@@ -205,6 +184,8 @@ class postgresql::params inherits postgresql::globals {
       $confdir                = pick($confdir, "/etc/postgresql/${version}/main")
       if $facts['os']['name'] == 'Debian' and versioncmp($facts['os']['release']['major'], '8') >= 0 {
         # Jessie uses systemd
+        $service_status = pick($service_status, "/usr/sbin/service ${service_name}@*-main status")
+      } elsif $facts['os']['name'] == 'Ubuntu' and versioncmp($facts['os']['release']['major'], '18.04') >= 0 {
         $service_status = pick($service_status, "/usr/sbin/service ${service_name}@*-main status")
       } elsif $facts['os']['name'] == 'Ubuntu' and versioncmp($facts['os']['release']['major'], '15.04') >= 0 {
         # Ubuntu releases since vivid use systemd
@@ -223,7 +204,6 @@ class postgresql::params inherits postgresql::globals {
 
       $client_package_name  = pick($client_package_name, 'UNSET')
       $server_package_name  = pick($server_package_name, 'postgresql')
-      $contrib_package_name = pick_default($contrib_package_name, undef)
       $devel_package_name   = pick_default($devel_package_name, undef)
       $java_package_name    = pick($java_package_name, 'jdbc-postgresql')
       $perl_package_name    = pick($perl_package_name, 'DBD-Pg')

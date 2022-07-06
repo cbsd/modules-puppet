@@ -143,7 +143,7 @@ class apt (
   Hash $settings                = $apt::params::settings,
   Boolean $manage_auth_conf     = $apt::params::manage_auth_conf,
   Array[Apt::Auth_conf_entry]
-    $auth_conf_entries          = $apt::params::auth_conf_entries,
+  $auth_conf_entries            = $apt::params::auth_conf_entries,
   String $auth_conf_owner       = $apt::params::auth_conf_owner,
   String $root                  = $apt::params::root,
   String $sources_list          = $apt::params::sources_list,
@@ -163,7 +163,6 @@ class apt (
   }
 
 ) inherits apt::params {
-
   if $facts['os']['family'] != 'Debian' {
     fail('This module only works on Debian or derivatives like Ubuntu')
   }
@@ -204,10 +203,32 @@ class apt (
   }
 
   $_purge = merge($::apt::purge_defaults, $purge)
-  $_proxy = merge($apt::proxy_defaults, $proxy)
+
+  if $proxy['perhost'] {
+    $_perhost = $proxy['perhost'].map |$item| {
+      $_item = merge($apt::proxy_defaults, $item)
+      $_scheme = $_item['https'] ? {
+        true    => 'https',
+        default => 'http' }
+      $_port = $_item['port'] ? {
+        Integer => ":${_item['port']}",
+        default => ''
+      }
+      $_target = $_item['direct'] ? {
+        true    => 'DIRECT',
+        default => "${_scheme}://${_item['host']}${_port}/" }
+      merge($item, {
+        'scheme' => $_scheme,
+        'target' => $_target })
+    }
+  } else {
+    $_perhost = {}
+  }
+
+  $_proxy = merge($apt::proxy_defaults, $proxy, { 'perhost' => $_perhost })
 
   $confheadertmp = epp('apt/_conf_header.epp')
-  $proxytmp = epp('apt/proxy.epp', {'proxies' => $_proxy})
+  $proxytmp = epp('apt/proxy.epp', { 'proxies' => $_proxy })
   $updatestamptmp = epp('apt/15update-stamp.epp')
 
   if $_proxy['ensure'] == 'absent' or $_proxy['host'] {
@@ -227,9 +248,7 @@ class apt (
       true    => nil,
       default => undef,
     }
-  }
-  else
-    {
+  } else {
     $sources_list_ensure = $_purge['sources.list'] ? {
       true    => file,
       default => file,
@@ -243,12 +262,6 @@ class apt (
   $preferences_ensure = $_purge['preferences'] ? {
     true    => absent,
     default => file,
-  }
-
-  if $_update['frequency'] == 'always' {
-    Exec <| title=='apt_update' |> {
-      refreshonly => false,
-    }
   }
 
   apt::setting { 'conf-update-stamp':
@@ -346,6 +359,19 @@ class apt (
     create_resources('apt::pin', $pins)
   }
 
-  # required for adding GPG keys on Debian 9 (and derivatives)
-  ensure_packages(['gnupg'])
+  case $facts['os']['name'] {
+    'Debian': {
+      if versioncmp($facts['os']['release']['major'], '9') >= 0 {
+        ensure_packages(['gnupg'])
+      }
+    }
+    'Ubuntu': {
+      if versioncmp($facts['os']['release']['full'], '17.04') >= 0 {
+        ensure_packages(['gnupg'])
+      }
+    }
+    default: {
+      # Nothing in here
+    }
+  }
 }
