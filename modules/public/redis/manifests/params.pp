@@ -3,8 +3,6 @@
 class redis::params inherits redis::globals {
   case $facts['os']['family'] {
     'Debian': {
-      $ppa_repo                  = 'ppa:chris-lea/redis-server'
-
       $config_dir                = '/etc/redis'
       $config_dir_mode           = '0755'
       $config_file               = '/etc/redis/redis.conf'
@@ -44,7 +42,6 @@ class redis::params inherits redis::globals {
     }
 
     'RedHat': {
-      $ppa_repo             = undef
       $daemonize            = false
       $config_owner         = 'redis'
       $config_group         = 'root'
@@ -73,28 +70,35 @@ class redis::params inherits redis::globals {
         $sentinel_pid_file         = "/var/opt/rh/${scl}/run/redis-sentinel.pid"
         $sentinel_log_file         = "/var/opt/rh/${scl}/log/redis/sentinel.log"
       } else {
-        $config_dir                = '/etc/redis'
-        $config_file               = '/etc/redis.conf'
-        $config_file_orig          = '/etc/redis.conf.puppet'
-        $log_dir                   = '/var/log/redis'
-        $package_name              = 'redis'
-        $pid_file                  = '/var/run/redis_6379.pid'
-        $service_name              = 'redis'
-        $workdir                   = '/var/lib/redis'
-        $bin_path                  = '/usr/bin'
-
-        $sentinel_config_file      = '/etc/redis-sentinel.conf'
-        $sentinel_config_file_orig = '/etc/redis-sentinel.conf.puppet'
-        $sentinel_service_name     = 'redis-sentinel'
-        $sentinel_package_name     = 'redis'
-        $sentinel_pid_file         = '/var/run/redis/redis-sentinel.pid'
-        $sentinel_log_file         = '/var/log/redis/sentinel.log'
+        $config_dir                  = '/etc/redis'
+        if (versioncmp($facts['os']['release']['major'], '9') >= 0) {
+          $config_file               = '/etc/redis/redis.conf'
+          $config_file_orig          = '/etc/redis/redis.conf.puppet'
+        } else {
+          $config_file               = '/etc/redis.conf'
+          $config_file_orig          = '/etc/redis.conf.puppet'
+        }
+        $log_dir                     = '/var/log/redis'
+        $package_name                = 'redis'
+        $pid_file                    = '/var/run/redis_6379.pid'
+        $service_name                = 'redis'
+        $workdir                     = '/var/lib/redis'
+        $bin_path                    = '/usr/bin'
+        if (versioncmp($facts['os']['release']['major'], '9') >= 0) {
+          $sentinel_config_file      = '/etc/redis/sentinel.conf'
+          $sentinel_config_file_orig = '/etc/redis/sentinel.conf.puppet'
+        } else {
+          $sentinel_config_file      = '/etc/redis-sentinel.conf'
+          $sentinel_config_file_orig = '/etc/redis-sentinel.conf.puppet'
+        }
+        $sentinel_service_name       = 'redis-sentinel'
+        $sentinel_package_name       = 'redis'
+        $sentinel_pid_file           = '/var/run/redis/redis-sentinel.pid'
+        $sentinel_log_file           = '/var/log/redis/sentinel.log'
       }
     }
 
     'FreeBSD': {
-      $ppa_repo                  = undef
-
       $config_dir                = '/usr/local/etc/redis'
       $config_dir_mode           = '0755'
       $config_file               = '/usr/local/etc/redis.conf'
@@ -121,8 +125,6 @@ class redis::params inherits redis::globals {
     }
 
     'Suse': {
-      $ppa_repo                  = undef
-
       $config_dir                = '/etc/redis'
       $config_dir_mode           = '0750'
       $config_file               = '/etc/redis/redis-server.conf'
@@ -148,8 +150,6 @@ class redis::params inherits redis::globals {
     }
 
     'Archlinux': {
-      $ppa_repo                  = undef
-
       $config_dir                = '/etc/redis'
       $config_dir_mode           = '0755'
       $config_file               = '/etc/redis/redis.conf'

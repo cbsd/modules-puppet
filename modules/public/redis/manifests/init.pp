@@ -37,6 +37,8 @@
 #   Adjust percentatge for auto-aof-rewrite.
 # @param bind
 #   Configure which IP address(es) to listen on. To bind on all interfaces, use an empty array.
+# @param bin_path
+#   Directory containing redis binary executables.
 # @param config_dir
 #   Directory containing the configuration files.
 # @param config_dir_mode
@@ -106,12 +108,14 @@
 #   The lag in seconds
 # @param min_slaves_to_write
 #   Minimum number of slaves to be in "online" state
+# @param modules
+#   Additional redis modules to load (.so path)
 # @param no_appendfsync_on_rewrite
 #   If you have latency problems turn this to 'true'. Otherwise leave it as
 # @param notify_keyspace_events
 #   Which events to notify Pub/Sub clients about events happening
 # @param notify_service
-#   You may disable service reloads when config files change if you
+#   You may disable service reloads when config files change
 # @param package_ensure
 #   Default action for package.
 # @param package_name
@@ -156,6 +160,10 @@
 #   Specify the service name for Init or Systemd.
 # @param service_user
 #   Specify which user to run as.
+# @param service_timeout_start
+#   Specify the time after which a service startup should be considered as failed.
+# @param service_timeout_stop
+#   Specify the time after which a service stop should be considered as failed.
 # @param set_max_intset_entries
 #   The following configuration setting sets the limit in the size of the set
 #   in order to use this special memory saving encoding.
@@ -193,6 +201,30 @@
 #   TCP keepalive.
 # @param timeout
 #   Close the connection after a client is idle for N seconds (0 to disable).
+# @param tls_port
+#   Configure which TLS port to listen on.
+# @param tls_cert_file
+#   Specify which X.509 certificate file to use for TLS connections.
+# @param tls_key_file
+#   Specify which privaye key file to use for TLS connections.
+# @param tls_ca_cert_file
+#   Specify which X.509 CA certificate(s) bundle file to use.
+# @param tls_ca_cert_dir
+#   Specify which X.509 CA certificate(s) bundle directory to use.
+# @param tls_auth_clients
+#   Specify if clients and replicas are required to authenticate using valid client side certificates.
+# @param tls_replication
+#   Specify if TLS should be enabled on replication links.
+# @param tls_cluster
+#   Specify if TLS should be used for the bus protocol.
+# @param tls_ciphers
+#   Configure allowed ciphers for TLS <= TLSv1.2.
+# @param tls_ciphersuites
+#   Configure allowed TLSv1.3 ciphersuites.
+# @param tls_protocols
+#   Configure allowed TLS protocol versions.
+# @param tls_prefer_server_ciphers
+#   Specify if the server's preference should be used when choosing a cipher.
 # @param ulimit
 #   Limit the use of system-wide resources.
 # @param ulimit_managed
@@ -230,6 +262,47 @@
 #   Only set if cluster_enabled is true
 # @param instances
 #   Iterate through multiple instance configurations
+# @param io_threads
+#   Number of threads to handle IO operations in Redis
+# @param io_threads_do_reads
+#   Enabled/disable io_threads to handle reads
+# @param cluster_allow_reads_when_down
+#   Allows nodes to serve read data while cluster status is down
+# @param cluster_replica_no_failover
+#   Disabled automatic failover for replica
+# @param dynamic_hz
+#   When dynamic HZ is enabled, the actual configured HZ will be used
+#   as a baseline, but multiples of the configured HZ value will be actually
+#   used as needed once more clients are connected.
+# @param activedefrag
+#   Enable/disable active defragmentation
+# @param active_defrag_ignore_bytes
+#   Minimum amount of fragmentation waste to start active defrag
+#   Only set if activedefrag is true
+# @param active_defrag_threshold_lower
+#   Minimum percentage of fragmentation to start active defrag
+#   Only set if activedefrag is true
+# @param active_defrag_threshold_upper
+#   Maximum percentage of fragmentation at which we use maximum effort
+#   Only set if activedefrag is true
+# @param active_defrag_cycle_min
+#   Minimal effort for defrag in CPU percentage, to be used when the lower
+#   threshold is reached
+#   Only set if activedefrag is true
+# @param active_defrag_cycle_max
+#   Maximal effort for defrag in CPU percentage, to be used when the upper
+#   threshold is reached
+#   Only set if activedefrag is true
+# @param active_defrag_max_scan_fields
+#   Maximum number of set/hash/zset/list fields that will be processed from
+#   the main dictionary scan
+#   Only set if activedefrag is true
+# @param jemalloc_bg_thread
+#   Jemalloc background thread for purging will be enabled by default
+# @param rdb_save_incremental_fsync
+#   When redis saves RDB file, if the following option is enabled
+#   the file will be fsync-ed every 32 MB of data generated.
+
 class redis (
   Boolean $activerehashing                                       = true,
   Boolean $aof_load_truncated                                    = true,
@@ -242,11 +315,12 @@ class redis (
   Variant[Stdlib::IP::Address, Array[Stdlib::IP::Address]] $bind = ['127.0.0.1'],
   String[1] $output_buffer_limit_slave                           = '256mb 64mb 60',
   String[1] $output_buffer_limit_pubsub                          = '32mb 8mb 60',
+  Stdlib::Absolutepath $bin_path                                 = $redis::params::bin_path,
   String[1] $conf_template                                       = 'redis/redis.conf.epp',
   Stdlib::Absolutepath $config_dir                               = $redis::params::config_dir,
   Stdlib::Filemode $config_dir_mode                              = $redis::params::config_dir_mode,
   Stdlib::Absolutepath $config_file                              = $redis::params::config_file,
-  Stdlib::Filemode $config_file_mode                             = '0644',
+  Stdlib::Filemode $config_file_mode                             = '0640',
   Stdlib::Absolutepath $config_file_orig                         = $redis::params::config_file_orig,
   String[1] $config_group                                        = $redis::params::config_group,
   String[1] $config_owner                                        = $redis::params::config_owner,
@@ -272,10 +346,11 @@ class redis (
   Optional[Variant[String[1], Sensitive[String[1]]]] $masterauth = undef,
   Integer[1] $maxclients                                         = 10000,
   $maxmemory                                                     = undef,
-  $maxmemory_policy                                              = undef,
-  $maxmemory_samples                                             = undef,
+  Optional[Redis::MemoryPolicy] $maxmemory_policy                = undef,
+  Optional[Integer[1, 10]] $maxmemory_samples                    = undef,
   Integer[0] $min_slaves_max_lag                                 = 10,
   Integer[0] $min_slaves_to_write                                = 0,
+  Array[Stdlib::Absolutepath] $modules                           = [],
   Boolean $no_appendfsync_on_rewrite                             = false,
   Optional[String[1]] $notify_keyspace_events                    = undef,
   Boolean $notify_service                                        = true,
@@ -285,7 +360,7 @@ class redis (
   Stdlib::Absolutepath $pid_file                                 = $redis::params::pid_file,
   Stdlib::Port $port                                             = 6379,
   Boolean $protected_mode                                        = true,
-  Optional[String] $ppa_repo                                     = $redis::params::ppa_repo,
+  Optional[String] $ppa_repo                                     = undef,
   Boolean $rdbcompression                                        = true,
   Hash[String,String] $rename_commands                           = {},
   String[1] $repl_backlog_size                                   = '1mb',
@@ -302,6 +377,8 @@ class redis (
   Boolean $service_manage                                        = true,
   String[1] $service_name                                        = $redis::params::service_name,
   String[1] $service_user                                        = 'redis',
+  Optional[Integer[0]] $service_timeout_start                    = undef,
+  Optional[Integer[0]] $service_timeout_stop                     = undef,
   Integer[0] $set_max_intset_entries                             = 512,
   Integer[0] $slave_priority                                     = 100,
   Boolean $slave_read_only                                       = true,
@@ -315,6 +392,18 @@ class redis (
   Integer[0] $tcp_backlog                                        = 511,
   Integer[0] $tcp_keepalive                                      = 0,
   Integer[0] $timeout                                            = 0,
+  Optional[Stdlib::Port] $tls_port                               = undef,
+  Optional[Stdlib::Absolutepath] $tls_cert_file                  = undef,
+  Optional[Stdlib::Absolutepath] $tls_key_file                   = undef,
+  Optional[Stdlib::Absolutepath] $tls_ca_cert_file               = undef,
+  Optional[Stdlib::Absolutepath] $tls_ca_cert_dir                = undef,
+  Enum['yes', 'no', 'optional'] $tls_auth_clients                = 'no',
+  Boolean $tls_replication                                       = false,
+  Boolean $tls_cluster                                           = false,
+  Optional[String[1]] $tls_ciphers                               = undef,
+  Optional[String[1]] $tls_ciphersuites                          = undef,
+  Optional[String[1]] $tls_protocols                             = undef,
+  Boolean $tls_prefer_server_ciphers                             = false,
   Variant[Stdlib::Absolutepath, Enum['']] $unixsocket            = '/var/run/redis/redis.sock',
   Variant[Stdlib::Filemode, Enum['']] $unixsocketperm            = '0755',
   Integer[0] $ulimit                                             = 65536,
@@ -330,6 +419,20 @@ class redis (
   Boolean $cluster_require_full_coverage                         = true,
   Integer[0] $cluster_migration_barrier                          = 1,
   Hash[String[1], Hash] $instances                               = {},
+  Optional[Integer[1]] $io_threads                               = undef,
+  Optional[Boolean] $io_threads_do_reads                         = undef,
+  Optional[Boolean] $cluster_allow_reads_when_down               = undef,
+  Optional[Boolean] $cluster_replica_no_failover                 = undef,
+  Optional[Boolean] $dynamic_hz                                  = undef,
+  Optional[Boolean] $activedefrag                                = undef,
+  String[1] $active_defrag_ignore_bytes                          = '100mb',
+  Integer[1, 100] $active_defrag_threshold_lower                 = 10,
+  Integer[1, 100] $active_defrag_threshold_upper                 = 100,
+  Integer[1, 100] $active_defrag_cycle_min                       = 1,
+  Integer[1, 100] $active_defrag_cycle_max                       = 100,
+  Integer[1] $active_defrag_max_scan_fields                      = 1000,
+  Optional[Boolean] $jemalloc_bg_thread                          = undef,
+  Optional[Boolean] $rdb_save_incremental_fsync                  = undef,
 ) inherits redis::params {
   contain redis::preinstall
   contain redis::install

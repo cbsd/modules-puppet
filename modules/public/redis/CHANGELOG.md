@@ -4,6 +4,60 @@ All notable changes to this project will be documented in this file.
 Each new release typically also includes the latest modulesync defaults.
 These should not affect the functionality of the module.
 
+## [v8.4.0](https://github.com/voxpupuli/puppet-redis/tree/v8.4.0) (2022-05-31)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-redis/compare/v8.3.0...v8.4.0)
+
+**Implemented enhancements:**
+
+- Add support for systemd service timeouts [\#447](https://github.com/voxpupuli/puppet-redis/pull/447) ([fraenki](https://github.com/fraenki))
+- Add support for Redis6 features [\#445](https://github.com/voxpupuli/puppet-redis/pull/445) ([fraenki](https://github.com/fraenki))
+
+**Closed issues:**
+
+- Rediscluster on Ubuntu 20.04 [\#402](https://github.com/voxpupuli/puppet-redis/issues/402)
+
+## [v8.3.0](https://github.com/voxpupuli/puppet-redis/tree/v8.3.0) (2022-04-04)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-redis/compare/v8.2.0...v8.3.0)
+
+**Implemented enhancements:**
+
+- Add tls settings to the redis::sentinel class and the redis-sentinel.conf template [\#443](https://github.com/voxpupuli/puppet-redis/pull/443) ([tparkercbn](https://github.com/tparkercbn))
+- Add Debian 11 support [\#440](https://github.com/voxpupuli/puppet-redis/pull/440) ([ekohl](https://github.com/ekohl))
+- Drop default PPA setting and only install EPEL on EL7 [\#435](https://github.com/voxpupuli/puppet-redis/pull/435) ([ekohl](https://github.com/ekohl))
+- CentOS9/RHEL9: Migrate configuration files to /etc/redis [\#434](https://github.com/voxpupuli/puppet-redis/pull/434) ([kajinamit](https://github.com/kajinamit))
+- conditional instance restarts on config file changes [\#433](https://github.com/voxpupuli/puppet-redis/pull/433) ([aamerik](https://github.com/aamerik))
+- manage additional redis modules [\#426](https://github.com/voxpupuli/puppet-redis/pull/426) ([ymartin-ovh](https://github.com/ymartin-ovh))
+- service\_template RuntimeDirectory [\#424](https://github.com/voxpupuli/puppet-redis/pull/424) ([aamerik](https://github.com/aamerik))
+
+**Fixed bugs:**
+
+- Fix issue redis.conf being world readable [\#427](https://github.com/voxpupuli/puppet-redis/pull/427) ([jnguiot](https://github.com/jnguiot))
+
+**Closed issues:**
+
+- Single instance systemd service won't start on Arch Linux [\#439](https://github.com/voxpupuli/puppet-redis/issues/439)
+
+**Merged pull requests:**
+
+- Drop Archlinux support [\#441](https://github.com/voxpupuli/puppet-redis/pull/441) ([ekohl](https://github.com/ekohl))
+- Fix running acceptance tests in non-Docker environments [\#437](https://github.com/voxpupuli/puppet-redis/pull/437) ([ekohl](https://github.com/ekohl))
+- Correct docs on redis::get & regenerate REFERENCE.md [\#436](https://github.com/voxpupuli/puppet-redis/pull/436) ([ekohl](https://github.com/ekohl))
+
+## [v8.2.0](https://github.com/voxpupuli/puppet-redis/tree/v8.2.0) (2021-10-13)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-redis/compare/v8.1.1...v8.2.0)
+
+**Implemented enhancements:**
+
+- allow bin\_path overrides for custom redis installs [\#423](https://github.com/voxpupuli/puppet-redis/pull/423) ([aamerik](https://github.com/aamerik))
+- Add TLS support [\#421](https://github.com/voxpupuli/puppet-redis/pull/421) ([aamerik](https://github.com/aamerik))
+
+**Fixed bugs:**
+
+- Skip ensuring package if sentinel requires no additional package [\#417](https://github.com/voxpupuli/puppet-redis/pull/417) ([kajinamit](https://github.com/kajinamit))
+
 ## [v8.1.1](https://github.com/voxpupuli/puppet-redis/tree/v8.1.1) (2021-08-30)
 
 [Full Changelog](https://github.com/voxpupuli/puppet-redis/compare/v8.1.0...v8.1.1)
@@ -286,7 +340,7 @@ This is the first release since the module was migrated to the Vox Pupuli `puppe
 - Bumped apt version dependency to version \< 5.0.0 [\#237](https://github.com/voxpupuli/puppet-redis/pull/237) ([c4m4](https://github.com/c4m4))
 - Updates for EL6 [\#236](https://github.com/voxpupuli/puppet-redis/pull/236) ([petems](https://github.com/petems))
 - Pin version of redis gem [\#235](https://github.com/voxpupuli/puppet-redis/pull/235) ([petems](https://github.com/petems))
-- Added configuration options for client-output-buffer-limit [\#233](https://github.com/voxpupuli/puppet-redis/pull/233) ([Mike-Petersen](https://github.com/Mike-Petersen))
+- Added configuration options for client-output-buffer-limit [\#233](https://github.com/voxpupuli/puppet-redis/pull/233) ([mike-petersen](https://github.com/mike-petersen))
 - Allow `slaveof` when binding to localhost [\#231](https://github.com/voxpupuli/puppet-redis/pull/231) ([joshuaspence](https://github.com/joshuaspence))
 - Fix issues with missing locale for Debian box [\#224](https://github.com/voxpupuli/puppet-redis/pull/224) ([petems](https://github.com/petems))
 - Instance service improvements [\#222](https://github.com/voxpupuli/puppet-redis/pull/222) ([kwevers](https://github.com/kwevers))

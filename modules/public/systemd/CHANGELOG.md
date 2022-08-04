@@ -4,6 +4,155 @@ All notable changes to this project will be documented in this file.
 Each new release typically also includes the latest modulesync defaults.
 These should not affect the functionality of the module.
 
+## [v3.10.0](https://github.com/voxpupuli/puppet-systemd/tree/v3.10.0) (2022-06-20)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-systemd/compare/v3.9.0...v3.10.0)
+
+**Implemented enhancements:**
+
+- systemd::timer: move variable definition close to where it is used [\#280](https://github.com/voxpupuli/puppet-systemd/pull/280) ([simondeziel](https://github.com/simondeziel))
+- Add comment hint about initrd for folks [\#279](https://github.com/voxpupuli/puppet-systemd/pull/279) ([jcpunk](https://github.com/jcpunk))
+- Fix systemctl daemon-reload after file additions [\#277](https://github.com/voxpupuli/puppet-systemd/pull/277) ([trevor-vaughan](https://github.com/trevor-vaughan))
+- systemd::resolved: save readlink's value to avoid calling it twice [\#276](https://github.com/voxpupuli/puppet-systemd/pull/276) ([simondeziel](https://github.com/simondeziel))
+
+**Fixed bugs:**
+
+- systemd::dropin\_file doesn't cause a systemd daemon-reload [\#234](https://github.com/voxpupuli/puppet-systemd/issues/234)
+
+**Merged pull requests:**
+
+- Minor wordsmithing in README [\#283](https://github.com/voxpupuli/puppet-systemd/pull/283) ([op-ct](https://github.com/op-ct))
+- Correct spelling mistakes [\#275](https://github.com/voxpupuli/puppet-systemd/pull/275) ([EdwardBetts](https://github.com/EdwardBetts))
+
+## [v3.9.0](https://github.com/voxpupuli/puppet-systemd/tree/v3.9.0) (2022-05-25)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-systemd/compare/v3.8.0...v3.9.0)
+
+**Implemented enhancements:**
+
+- Add machine-info information management [\#272](https://github.com/voxpupuli/puppet-systemd/pull/272) ([jcpunk](https://github.com/jcpunk))
+- Add management of systemd-oomd [\#271](https://github.com/voxpupuli/puppet-systemd/pull/271) ([jcpunk](https://github.com/jcpunk))
+- Add parameter to manage default target [\#270](https://github.com/voxpupuli/puppet-systemd/pull/270) ([jcpunk](https://github.com/jcpunk))
+- Support Service Limits specified in Bytes [\#268](https://github.com/voxpupuli/puppet-systemd/pull/268) ([optiz0r](https://github.com/optiz0r))
+- Allows % and infinity for Memory Limits + Add MemoryMin [\#267](https://github.com/voxpupuli/puppet-systemd/pull/267) ([SeanHood](https://github.com/SeanHood))
+- Add CentOS 9 to supported operating systems [\#266](https://github.com/voxpupuli/puppet-systemd/pull/266) ([kajinamit](https://github.com/kajinamit))
+- Add function systemd::systemd\_escape [\#243](https://github.com/voxpupuli/puppet-systemd/pull/243) ([jkroepke](https://github.com/jkroepke))
+
+**Fixed bugs:**
+
+- Ensure systemd-networkd is available prior to notifying service [\#269](https://github.com/voxpupuli/puppet-systemd/pull/269) ([mat1010](https://github.com/mat1010))
+
+**Closed issues:**
+
+- systemd target support [\#265](https://github.com/voxpupuli/puppet-systemd/issues/265)
+- systemd::escape function is does not escape a lot of other characters [\#242](https://github.com/voxpupuli/puppet-systemd/issues/242)
+
+## [v3.8.0](https://github.com/voxpupuli/puppet-systemd/tree/v3.8.0) (2022-03-02)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-systemd/compare/v3.7.0...v3.8.0)
+
+**Implemented enhancements:**
+
+- dropin\_file: Implement service\_parameters hash [\#259](https://github.com/voxpupuli/puppet-systemd/pull/259) ([bastelfreak](https://github.com/bastelfreak))
+
+**Fixed bugs:**
+
+- systemd::udev::rule: param rules now defaults to `[]` / fix broken tests [\#260](https://github.com/voxpupuli/puppet-systemd/pull/260) ([bastelfreak](https://github.com/bastelfreak))
+
+**Merged pull requests:**
+
+- unit\_file: deprecate hasrestart/hasstatus params [\#261](https://github.com/voxpupuli/puppet-systemd/pull/261) ([bastelfreak](https://github.com/bastelfreak))
+
+## [v3.7.0](https://github.com/voxpupuli/puppet-systemd/tree/v3.7.0) (2022-02-23)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-systemd/compare/v3.6.0...v3.7.0)
+
+**Implemented enhancements:**
+
+- Install systemd-resolved on RedHat 7 [\#257](https://github.com/voxpupuli/puppet-systemd/pull/257) ([traylenator](https://github.com/traylenator))
+- New parmater manage\_resolv\_conf for /etc/resolv.conf [\#256](https://github.com/voxpupuli/puppet-systemd/pull/256) ([traylenator](https://github.com/traylenator))
+- Manage systemd-coredump config and setup [\#251](https://github.com/voxpupuli/puppet-systemd/pull/251) ([traylenator](https://github.com/traylenator))
+
+**Fixed bugs:**
+
+- systemd-resolved cannot be fully disabled because /etc/resolv.conf is managed [\#203](https://github.com/voxpupuli/puppet-systemd/issues/203)
+- Do not install  systemd-resolved RedHat 8 [\#254](https://github.com/voxpupuli/puppet-systemd/pull/254) ([traylenator](https://github.com/traylenator))
+- timer: timer unit must depend on service unit. [\#253](https://github.com/voxpupuli/puppet-systemd/pull/253) ([olifre](https://github.com/olifre))
+- Don't manage /etc/resolv.conf if systemd-resolved is stopped [\#252](https://github.com/voxpupuli/puppet-systemd/pull/252) ([traylenator](https://github.com/traylenator))
+
+**Closed issues:**
+
+- missing hiera lookup\_options [\#196](https://github.com/voxpupuli/puppet-systemd/issues/196)
+
+**Merged pull requests:**
+
+- Addition of Trivial Acceptance Tests [\#255](https://github.com/voxpupuli/puppet-systemd/pull/255) ([traylenator](https://github.com/traylenator))
+- document systemd::unit\_file example with puppet-strings [\#250](https://github.com/voxpupuli/puppet-systemd/pull/250) ([bastelfreak](https://github.com/bastelfreak))
+
+## [v3.6.0](https://github.com/voxpupuli/puppet-systemd/tree/v3.6.0) (2022-02-15)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-systemd/compare/v3.5.2...v3.6.0)
+
+**Implemented enhancements:**
+
+- unit\_file: Implement selinux\_ignore\_defaults [\#248](https://github.com/voxpupuli/puppet-systemd/pull/248) ([bastelfreak](https://github.com/bastelfreak))
+- unit\_file: Implement hasrestart/hasstatus [\#247](https://github.com/voxpupuli/puppet-systemd/pull/247) ([bastelfreak](https://github.com/bastelfreak))
+- Install systemd-resolved on CentOS 8 and 9 [\#246](https://github.com/voxpupuli/puppet-systemd/pull/246) ([traylenator](https://github.com/traylenator))
+- Manage entries in modules-load.d directory [\#244](https://github.com/voxpupuli/puppet-systemd/pull/244) ([traylenator](https://github.com/traylenator))
+
+**Fixed bugs:**
+
+- systemd::escape: Also escape - \(dash\) [\#245](https://github.com/voxpupuli/puppet-systemd/pull/245) ([weaselp](https://github.com/weaselp))
+
+## [v3.5.2](https://github.com/voxpupuli/puppet-systemd/tree/v3.5.2) (2022-01-12)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-systemd/compare/v3.5.1...v3.5.2)
+
+**Fixed bugs:**
+
+- timesyncd compatibility with Debian 8 [\#239](https://github.com/voxpupuli/puppet-systemd/pull/239) ([tuxmea](https://github.com/tuxmea))
+- Link the unit file to /dev/null when "enable =\> mask" [\#236](https://github.com/voxpupuli/puppet-systemd/pull/236) ([simondeziel](https://github.com/simondeziel))
+
+**Closed issues:**
+
+- README refers to non-existent dns\_stub\_resolver parameter [\#195](https://github.com/voxpupuli/puppet-systemd/issues/195)
+- Parameter value 'mask' for 'enable' does not work [\#188](https://github.com/voxpupuli/puppet-systemd/issues/188)
+
+## [v3.5.1](https://github.com/voxpupuli/puppet-systemd/tree/v3.5.1) (2021-10-20)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-systemd/compare/v3.5.0...v3.5.1)
+
+**Fixed bugs:**
+
+- Declare a default for $accounting [\#229](https://github.com/voxpupuli/puppet-systemd/pull/229) ([ekohl](https://github.com/ekohl))
+- Do a daemon reload for static units [\#199](https://github.com/voxpupuli/puppet-systemd/pull/199) ([simondeziel](https://github.com/simondeziel))
+
+**Closed issues:**
+
+- provide sensible default for systemd::accounting [\#231](https://github.com/voxpupuli/puppet-systemd/issues/231)
+- daemon reload problem with 3.0.0 [\#190](https://github.com/voxpupuli/puppet-systemd/issues/190)
+
+**Merged pull requests:**
+
+- Correct use\_stub\_resolver example in README [\#230](https://github.com/voxpupuli/puppet-systemd/pull/230) ([traylenator](https://github.com/traylenator))
+
+## [v3.5.0](https://github.com/voxpupuli/puppet-systemd/tree/v3.5.0) (2021-09-13)
+
+[Full Changelog](https://github.com/voxpupuli/puppet-systemd/compare/v3.4.0...v3.5.0)
+
+**Implemented enhancements:**
+
+- Add Gentoo support [\#227](https://github.com/voxpupuli/puppet-systemd/pull/227) ([bastelfreak](https://github.com/bastelfreak))
+- Add CentOS/RHEL 9 support [\#226](https://github.com/voxpupuli/puppet-systemd/pull/226) ([mbaldessari](https://github.com/mbaldessari))
+- Use os.family for RedHat based Hiera data [\#225](https://github.com/voxpupuli/puppet-systemd/pull/225) ([treydock](https://github.com/treydock))
+- Add additional hash parameters for defined types [\#223](https://github.com/voxpupuli/puppet-systemd/pull/223) ([bastelfreak](https://github.com/bastelfreak))
+- Add Debian 11 support [\#222](https://github.com/voxpupuli/puppet-systemd/pull/222) ([bastelfreak](https://github.com/bastelfreak))
+- Add systemd::escape function [\#220](https://github.com/voxpupuli/puppet-systemd/pull/220) ([traylenator](https://github.com/traylenator))
+
+**Merged pull requests:**
+
+- Migrate static data from hiera to init.pp [\#221](https://github.com/voxpupuli/puppet-systemd/pull/221) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [v3.4.0](https://github.com/voxpupuli/puppet-systemd/tree/v3.4.0) (2021-09-03)
 
 [Full Changelog](https://github.com/voxpupuli/puppet-systemd/compare/v3.3.0...v3.4.0)

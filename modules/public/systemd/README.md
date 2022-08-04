@@ -53,9 +53,9 @@ You can also use this module to more fully manage the new unit. This example dep
 
 ```puppet
 systemd::unit_file { 'foo.service':
- source => "puppet:///modules/${module_name}/foo.service",
- enable => true,
- active => true,
+  content => file("${module_name}/foo.service"),
+  enable => true,
+  active => true,
 }
 ```
 
@@ -103,6 +103,17 @@ systemd::dropin_files:
   my-foo.conf:
     unit: foo.service
     source: puppet:///modules/${module_name}/foo.conf
+```
+
+### modules-load.d
+
+Create a file entry for modules-loads directory and start
+`systemd-modules-load.service`
+
+```puppet
+systemd::modules_load{'impi.conf':
+  content => "ipmi\n",
+}
 ```
 
 ### tmpfiles
@@ -226,6 +237,12 @@ systemd::service_limits { 'foo.service':
 }
 ```
 
+### machine-info (hostnamectl)
+
+You can set elements of `/etc/machine-info` via the `machine_info_settings` parameter.  These values are read by `hostnamectl`.
+
+To manage these, you'll need to add an additional module, [augeasproviders\_shellvar](https://forge.puppet.com/modules/herculesteam/augeasproviders_shellvar), to your environment.
+
 ### Daemon reloads
 
 Systemd caches unit files and their relations. This means it needs to reload, typically done via `systemctl daemon-reload`. Since Puppet 6.1.0 ([PUP-3483](https://tickets.puppetlabs.com/browse/PUP-3483)) takes care of this by calling `systemctl show $SERVICE -- --property=NeedDaemonReload` to determine if a reload is needed. Typically this works well and removes the need for `systemd::systemctl::daemon_reload` as provided prior to camptocamp/systemd 3.0.0. This avoids common circular dependencies.
@@ -248,8 +265,11 @@ systemd::network{'eth0.network':
 
 ### Services
 
+The default target is managed via the `default_target` parameter.  If this is left at its default value (`undef`), the default-target will be unmanaged by puppet.
+
 Systemd provides multiple services. Currently you can manage `systemd-resolved`,
-`systemd-timesyncd`, `systemd-networkd`, `systemd-journald` and `systemd-logind`
+`systemd-timesyncd`, `systemd-networkd`, `systemd-journald`, `systemd-coredump`
+and `systemd-logind`
 via the main class:
 
 ```puppet
@@ -260,6 +280,7 @@ class{'systemd':
   manage_journald  => true,
   manage_udevd     => true,
   manage_logind    => true,
+  manage_coredump  => true,
 }
 ```
 
@@ -267,9 +288,21 @@ $manage_networkd is required if you want to reload it for new
 `systemd::network` resources. Setting $manage_resolved will also manage your
 `/etc/resolv.conf`.
 
-When configuring `systemd::resolved` you could set `dns_stub_resolver` to false (default) to use a *standard* `/etc/resolved.conf`, or you could set it to `true` to use the local resolver provided by `systemd-resolved`.
+When configuring `systemd::resolved` you could set `use_stub_resolver` to false (default) to use a *standard* `/etc/resolved.conf`, or you could set it to `true` to use the local resolver provided by `systemd-resolved`.
 
-Systemd has introduced `DNS Over TLS` in the release 239. Currently three states are supported `yes` (since systemd 243), `opportunistic` (true) and `no` (false, default). When enabled with `yes` or `opportunistic` `systemd-resolved` will start a TCP-session to a DNS server with `DNS Over TLS` support. When enabled with `yes` (strict mode), queries will fail if the configured DNS servers do not support `DNS Over TLS`. Note that there will be no host checking for `DNS Over TLS` due to missing implementation in `systemd-resolved`.
+Systemd introduced `DNS Over TLS` in release 239. Currently three states are supported `yes` (since systemd 243), `opportunistic` (true) and `no` (false, default). When enabled with `yes` or `opportunistic` `systemd-resolved` will start a TCP-session to a DNS server with `DNS Over TLS` support. When enabled with `yes` (strict mode), queries will fail if the configured DNS servers do not support `DNS Over TLS`. Note that there will be no host checking for `DNS Over TLS` due to missing implementation in `systemd-resolved`.
+
+Stopping `systemd-resolved` once running can be problematic and care should be taken.
+
+```puppet
+class{'systemd':
+  manage_resolved => true,
+  resolved_ensure => false,
+}
+```
+
+will stop the service and should also copy `/run/systemd/resolve/resolv.conf` to `/etc/resolve.conf`.
+* Writing your own file to `/etc/resolv.conf` is also possible.
 
 It is possible to configure the default ntp servers in `/etc/systemd/timesyncd.conf`:
 
@@ -281,7 +314,12 @@ class{'systemd':
 }
 ```
 
+when `manage_systemd` is true any required sub package, e.g. `systemd-resolved` on CentOS 9, will be installed. However configuration of
+systemd-resolved will only occur on second puppet run after that installation.
+
 This requires [puppetlabs-inifile](https://forge.puppet.com/puppetlabs/inifile), which is only a soft dependency in this module (you need to explicitly install it). Both parameters accept a string or an array.
+
+
 
 ### Resource Accounting
 
@@ -348,6 +386,40 @@ systemd::udev::rule:
     - 'ACTION=="add", KERNEL=="sdb", RUN+="/bin/raw /dev/raw/raw2 %N"',
 ```
 
+### oomd configuration
+The `systemd-oomd `system can be configured.
+
+```puppet
+class{'systemd':
+  manage_oomd   => true,
+  oomd_ensure   => 'running'
+  oomd_settings => {
+    'SwapUsedLimit' => '90%',
+    'DefaultMemoryPressureLimit' => '60%',
+    'DefaultMemoryPressureDurationSec' => 30,
+  }
+}
+```
+
+### coredump configuration
+The `systemd-coredump `system can be configured.
+
+```puppet
+class{'systemd':
+  manage_coredump    => true,
+  coredump_backtrace => true,
+  coredump_settings  => {
+    'Storage'         => 'external',
+    'Compress'        => 'yes',
+    'ProcessSizeMax'  => '2G',
+    'ExternalSizeMax' => '10G',
+    'JournalSizeMax'  => '20T',
+    'MaxUse'          => '1E',
+    "MaxFree'         => '1P',
+  }
+}
+```
+
 ### logind configuration
 
 It also allows you to manage logind settings. You can manage logind settings through setting the `logind_settings` parameter. If you want a parameter to be removed, you can pass its value as params.
@@ -373,6 +445,39 @@ loginctl_user { 'foo':
 
 or as a hash via the `systemd::loginctl_users` parameter.
 
+### Systemd Escape Function
+Partially escape strings as `systemd-escape` command does.
+
+This functions only escapes a subset of chars. Non-ASCII character will not escape.
+
+```puppet
+$result = systemd::escape('foo::bar/')
+```
+`$result` would be `foo::bar-`
+
+or path escape as if with `-p` option.
+
+```puppet
+$result = systemd::escape('/mnt/foobar/', true)
+```
+`$result` would be `mnt-foobar`.
+
+### Systemd Escape Function (uses systemd-escape)
+Escape strings call the `systemd-escape` command in the background.
+
+It's highly recommend running the function as [deferred function](https://puppet.com/docs/puppet/6/deferring_functions.html) since it executes the command on the agent.
+
+```puppet
+$result = Deferred('systemd::systemd_escape', ["foo::bar"])
+```
+`$result` would be `foo::bar-`
+
+or path escape as if with `-p` option.
+
+```puppet
+$result = Deferred('systemd::systemd_escape', ["/mnt/foo-bar/", true])
+```
+`$result` would be `mnt-foo\x2dbar`.
 
 ## Transfer Notice
 
