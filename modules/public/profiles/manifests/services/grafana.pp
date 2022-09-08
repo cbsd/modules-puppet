@@ -35,6 +35,7 @@ class profiles::services::grafana (
 
 # FreeBSD
   class { '::grafana':
+    package_name => 'www/grafana8',
     cfg => {
         app_mode => 'production',
 #        server   => {

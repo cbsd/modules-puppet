@@ -18,7 +18,10 @@ class profiles::services::powerdns (
   String  $master                       = 'yes',
   String  $slave                        = 'no',
   String  $superslave                   = 'no',
-  Optional[String[1]] $masterhost        = undef,
+  String  $api                          = 'no',
+  String  $authoritative_api            = 'no',
+  Optional[String[1]] $apikey           = undef,
+  Optional[String[1]] $masterhos        = undef,
   Optional[String[1]] $slavehost        = undef,
   Optional[String[1]] $db_root_password = undef,
   Optional[String[1]] $db_password      = undef,
@@ -35,7 +38,7 @@ class profiles::services::powerdns (
     recurse => true,
   }
 
-  powerdns::config { 'authoritative-api': ensure  => present, setting => 'api', value => 'yes', type => 'authoritative', }
+  powerdns::config { 'authoritative-api': ensure  => present, setting => 'authoritative-api', value => "$authoritative_api", type => 'authoritative', }
   powerdns::config { 'version-string': ensure  => present, setting => 'version-string', value   => 'better than nothing', }
   powerdns::config { 'webserver': ensure  => present, setting => 'webserver', value   => 'yes', }
   powerdns::config { 'webserver-address': ensure  => present, setting => 'webserver-address', value   => '0.0.0.0', }
@@ -50,7 +53,20 @@ class profiles::services::powerdns (
   #powerdns::config { 'webserver-allow-from': ensure  => present, setting => 'webserver-allow-from', value   => '127.0.0.0/8,10.0.0.0/24', }
   # for test only
   powerdns::config { 'webserver-allow-from': ensure  => present, setting => 'webserver-allow-from', value   => '0.0.0.0/0', }
-  powerdns::config { 'api-key': ensure  => present, setting => 'api-key', value   => 'test', }
+
+  # when api-key undef, we needs https://forge.puppet.com/modules/puppet/extlib/reference for random
+  if ! $apikey {
+    # make an install flag so that it doesn't work every time
+    #fail("RANDOM HERE")
+    $my_apikey="test"
+  } else {
+    $my_apikey=$apikey
+  }
+
+  powerdns::config { 'api': ensure  => present, setting => 'api', value   => "$api", }
+  powerdns::config { 'api-key': ensure  => present, setting => 'api-key', value   => "$my_apikey", }
+
+  #powerdns::config { 'api': ensure  => present, setting => 'api', value   => "$api", }
   powerdns::config { 'master': ensure  => present, setting => 'master', value   => "${master}", }
 # fallback, e.g also-notify=192.0.2.1,192.168.2.2
 #  powerdns::config { 'also-notify': ensure  => present, setting => 'also-notify', value   => '10.0.0.161', }
@@ -96,14 +112,14 @@ class profiles::services::powerdns (
         #  postgres_password => $db_root_password,
         #  #service_provider  => 'freebsd',
         #}
-        #postgresql::server::pg_hba_rule { 'allow application network to access app database':
-        #  description => "Open up PostgreSQL for access from $db_username -> $db_name",
-        #  type        => 'host',
-        #  database    => $db_name,
-        #  user        => $db_username,
-        #  address     => '0.0.0.0/0',
-        #  auth_method => 'md5',
-        #}
+        postgresql::server::pg_hba_rule { 'allow application network to access app database':
+          description => "Open up PostgreSQL for access from $db_username -> $db_name",
+          type        => 'host',
+          database    => $db_name,
+          user        => $db_username,
+          address     => '0.0.0.0/0',
+          auth_method => 'md5',
+        }
         class { 'powerdns':
           backend_install  => $backend_install,
           backend          => $backend,
@@ -199,10 +215,6 @@ class profiles::services::powerdns (
 #      enable   => true,
 #      provider => 'freebsd',
 #    }
-  } else {
-    exec { "powerdnsadmin_install":
-      command => "/root/powerdns/poweradmin_install.sh",
-      onlyif  => "/usr/bin/env test ! -r /root/powerdnsadmin/buildok",
-    }
   }
 }
+
