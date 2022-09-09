@@ -19,14 +19,16 @@ class profiles::services::powerdns (
   String  $slave                        = 'no',
   String  $superslave                   = 'no',
   String  $api                          = 'no',
-  String  $authoritative_api            = 'no',
-  Optional[String[1]] $apikey           = undef,
-  Optional[String[1]] $masterhos        = undef,
+#  String  $authoritative_api            = 'no',
+  Optional[String[1]] $api_key          = undef,
+  Optional[String[1]] $masterhost       = undef,
   Optional[String[1]] $slavehost        = undef,
   Optional[String[1]] $db_root_password = undef,
   Optional[String[1]] $db_password      = undef,
   Optional[String[1]] $db_name          = 'powerdns',
   Optional[String[1]] $db_username      = 'powerdns',
+  Hash $zones                           = {},
+  Hash $records                         = {},
 ){
 
   file { '/root/powerdns':
@@ -38,7 +40,6 @@ class profiles::services::powerdns (
     recurse => true,
   }
 
-  powerdns::config { 'authoritative-api': ensure  => present, setting => 'authoritative-api', value => "$authoritative_api", type => 'authoritative', }
   powerdns::config { 'version-string': ensure  => present, setting => 'version-string', value   => 'better than nothing', }
   powerdns::config { 'webserver': ensure  => present, setting => 'webserver', value   => 'yes', }
   powerdns::config { 'webserver-address': ensure  => present, setting => 'webserver-address', value   => '0.0.0.0', }
@@ -55,16 +56,24 @@ class profiles::services::powerdns (
   powerdns::config { 'webserver-allow-from': ensure  => present, setting => 'webserver-allow-from', value   => '0.0.0.0/0', }
 
   # when api-key undef, we needs https://forge.puppet.com/modules/puppet/extlib/reference for random
-  if ! $apikey {
+  if ! $api_key {
     # make an install flag so that it doesn't work every time
     #fail("RANDOM HERE")
-    $my_apikey="test"
+    $my_api_key="test"
   } else {
-    $my_apikey=$apikey
+    $my_api_key=$api_key
+  }
+
+  file { '/usr/local/etc/powerdns-curl.conf':
+    ensure  => present,
+    mode    => '0600',
+    content => template("${module_name}/powerdns-sample-config.erb"),
+    owner   => 0,
+    group   => 0,
   }
 
   powerdns::config { 'api': ensure  => present, setting => 'api', value   => "$api", }
-  powerdns::config { 'api-key': ensure  => present, setting => 'api-key', value   => "$my_apikey", }
+  powerdns::config { 'api-key': ensure  => present, setting => 'api-key', value   => "$my_api_key", }
 
   #powerdns::config { 'api': ensure  => present, setting => 'api', value   => "$api", }
   powerdns::config { 'master': ensure  => present, setting => 'master', value   => "${master}", }
@@ -216,5 +225,14 @@ class profiles::services::powerdns (
 #      provider => 'freebsd',
 #    }
   }
+
+
+  if $zones {
+    create_resources(powerdns_zone, $zones)
+  }
+  if $records {
+    create_resources(powerdns_record, $records)
+  }
+
 }
 
