@@ -41,7 +41,6 @@ class profiles::services::powerdns (
   }
 
   powerdns::config { 'version-string': ensure  => present, setting => 'version-string', value   => 'better than nothing', }
-  powerdns::config { 'webserver': ensure  => present, setting => 'webserver', value   => 'yes', }
   powerdns::config { 'webserver-address': ensure  => present, setting => 'webserver-address', value   => '0.0.0.0', }
   powerdns::config { 'webserver-port': ensure  => present, setting => 'webserver-port', value   => '8081', }
 
