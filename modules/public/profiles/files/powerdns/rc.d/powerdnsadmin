@@ -40,6 +40,9 @@ stop()
 		_err=$?
 		[ ${_err} -eq  0 ] && kill -9 ${pids} && /bin/rm -f ${pidfile}
 	fi
+
+	# dup process: bug ?
+	ps axfwwww | grep powerdnsadmin/run.py | grep -v grep | awk '{printf "kill -9 "$1"\n"}' | sh > /dev/null 2>&1
 }
 
 start()
