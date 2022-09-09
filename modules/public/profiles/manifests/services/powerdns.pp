@@ -73,6 +73,9 @@ class profiles::services::powerdns (
   }
 
   powerdns::config { 'api': ensure  => present, setting => 'api', value   => "$api", }
+  # inherits api settings
+  powerdns::config { 'webserver': ensure  => present, setting => 'webserver', value   => "$api", }
+
   powerdns::config { 'api-key': ensure  => present, setting => 'api-key', value   => "$my_api_key", }
 
   #powerdns::config { 'api': ensure  => present, setting => 'api', value   => "$api", }
