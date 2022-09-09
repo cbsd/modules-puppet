@@ -218,14 +218,26 @@ class profiles::services::powerdns (
     }
     # ->
     # service enable=true not create /etc/rc.conf.d/powerdnsadmin, why?
-#    file { '/etc/rc.conf.d/powerdnsadmin':
-#      content => 'powerdnsadmin_enable="YES"',
-#      ensure  => present,
-#    } -> service { 'powerdnsadmin':
-#      ensure   => running,
-#      enable   => true,
-#      provider => 'freebsd',
-#    }
+    file { '/etc/rc.conf.d/powerdnsadmin':
+      content => 'powerdnsadmin_enable="YES"',
+      ensure  => present,
+    } -> service { 'powerdnsadmin':
+      ensure   => running,
+      enable   => true,
+      provider => 'freebsd',
+    }
+  } else {
+
+    file { '/etc/rc.conf.d/powerdnsadmin':
+      content => 'powerdnsadmin_enable="NO"',
+      ensure  => present,
+    } -> service { 'powerdnsadmin':
+      ensure   => stopped,
+      enable   => false,
+      provider => 'freebsd',
+    }
+
+
   }
 
 
