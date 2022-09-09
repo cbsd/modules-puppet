@@ -27,6 +27,11 @@ MODE="${1}"
 DST_DIR="/root/powerdnsadmin"
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
 
+if [ -r ${DST_DIR}/buildok ]; then
+	echo "build ok"
+	exit 0
+fi
+
 my_packages="python${PY_VER} py${PY_VER}-pip git mc www/yarn libxml2 libxslt openldap${LDAP_VER}-client py${PY_VER}-ldap3 mysql${MY_VER}-client postgresql${PG_VER}-client xmlsec1 py${PY_VER}-xmlsec"
 # most of pip/py- module version is hardcoded in requirenments.txt, but several module not strictly ( >= ): install from the pkg:
 my_packages="${my_packages} py${PY_VER}-bcrypt py${PY_VER}-dnspython py${PY_VER}-python3-saml"
@@ -89,14 +94,23 @@ if [ ${ret} -ne 0 ]; then
 	exit ${ret}
 fi
 
-date > ${DST_DIR}/buildok
-
-[ "${MODE}" = "install_only" ] && exit 0
 
 if [ ! -r /root/powerdns/rc.d/powerdnsadmin ]; then
 	echo "no such rc.d script /root/powerdns/rc.d/powerdnsadmin"
 	exit 1
 fi
+
+ln -sf /usr/local/bin/python3.9 /usr/local/bin/python3
+ln -sf /usr/local/bin/python3.9 /usr/local/bin/python
+[ ! -d /usr/local/etc/rc.d ] && mkdir -p /usr/local/etc/rc.d
+cp -a /root/powerdns/rc.d/powerdnsadmin /usr/local/etc/rc.d
+
+pkg clean -ya
+
+date > ${DST_DIR}/buildok
+
+[ "${MODE}" = "install_only" ] && exit 0
+
 if [ ! -r /usr/local/etc/powerdnsadmin/default_config.py ]; then
 	echo "no such config /usr/local/etc/powerdnsadmin/default_config.py"
 	exit 1
@@ -114,12 +128,5 @@ if [ ${ret} -ne 0 ]; then
 	echo "migration error"
 	exit ${ret}
 fi
-
-ln -sf /usr/local/bin/python3.9 /usr/local/bin/python3
-ln -sf /usr/local/bin/python3.9 /usr/local/bin/python
-[ ! -d /usr/local/etc/rc.d ] && mkdir -p /usr/local/etc/rc.d
-cp -a /root/powerdns/rc.d/powerdnsadmin /usr/local/etc/rc.d
-
-pkg clean -ya
 
 exit 0
