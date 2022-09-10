@@ -10,25 +10,26 @@
 # in shell: 
 #  pdns_control notify my.domain
 class profiles::services::powerdns (
-  String  $backend                      = 'sqlite',
-  Boolean $backend_install              = true,
-  Boolean $powerdnsadmin_install        = false,
-  String  $powerdnsadmin_config_dir     = '/usr/local/etc/powerdnsadmin',
-  String  $powerdnsadmin_config_file    = "${powerdnsadmin_config_dir}/default_config.py",
-  String  $master                       = 'yes',
-  String  $slave                        = 'no',
-  String  $superslave                   = 'no',
-  String  $api                          = 'no',
-#  String  $authoritative_api            = 'no',
-  Optional[String[1]] $api_key          = undef,
-  Optional[String[1]] $masterhost       = undef,
-  Optional[String[1]] $slavehost        = undef,
-  Optional[String[1]] $db_root_password = undef,
-  Optional[String[1]] $db_password      = undef,
-  Optional[String[1]] $db_name          = 'powerdns',
-  Optional[String[1]] $db_username      = 'powerdns',
-  Hash $zones                           = {},
-  Hash $records                         = {},
+  String  $backend                         = 'sqlite',
+  Boolean $backend_install                 = true,
+  Boolean $powerdnsadmin_install           = false,
+  String  $powerdnsadmin_config_dir        = '/usr/local/etc/powerdnsadmin',
+  String  $powerdnsadmin_config_file       = "${powerdnsadmin_config_dir}/default_config.py",
+  String  $master                          = 'yes',
+  String  $slave                           = 'no',
+  String  $superslave                      = 'no',
+  String  $api                             = 'no',
+  Optional[String[1]] $api_key             = undef,
+  Optional[String[1]] $masterhost          = undef,
+  Optional[String[1]] $slavehost           = undef,
+  Optional[String[1]] $db_root_password    = undef,
+  Optional[String[1]] $db_password         = undef,
+  Optional[String[1]] $db_name             = 'powerdns',
+  Optional[String[1]] $db_username         = 'powerdns',
+  Optional[String[1]] $local_address       = undef,                 # can be '0.0.0.0' for Linux, not for FreeBSD jail
+  Optional[String[1]] $query_local_address = undef,                 # can be '0.0.0.0' for Linux, not for FreeBSD jail
+  Hash $zones                              = {},
+  Hash $records                            = {},
 ){
 
   file { '/root/powerdns':
@@ -63,6 +64,26 @@ class profiles::services::powerdns (
     $my_api_key=$api_key
   }
 
+  # v6 todo
+#  if $facts['networking']['ip6'] {
+#
+#  }
+
+  if ! $local_address {
+    $my_local_address = "${facts['networking']['ip']}"
+  }
+  if ! $query_local_address {
+     $my_query_local_address = "${facts['networking']['ip']}"
+  }
+
+#  # force to 0.0.0.0. REASSIGN?
+#  if ! $my_local_address {
+#    $my_local_address="0.0.0.0"
+#  }
+#  if ! $my_query_local_address {
+#    $my_query_local_address="0.0.0.0"
+#  }
+
   file { '/usr/local/etc/powerdns-curl.conf':
     ensure  => present,
     mode    => '0600',
@@ -81,8 +102,8 @@ class profiles::services::powerdns (
   powerdns::config { 'master': ensure  => present, setting => 'master', value   => "${master}", }
 # fallback, e.g also-notify=192.0.2.1,192.168.2.2
 #  powerdns::config { 'also-notify': ensure  => present, setting => 'also-notify', value   => '10.0.0.161', }
-  powerdns::config { 'authoritative-local-address': type => 'authoritative', setting => 'local-address', value   => '0.0.0.0', }
-  powerdns::config { 'authoritative-query-local-address': type => 'authoritative', setting => 'query-local-address', value   => '0.0.0.0', }
+  powerdns::config { 'authoritative-local-address': type => 'authoritative', setting => 'local-address', value => $my_local_address, }
+  powerdns::config { 'authoritative-query-local-address': type => 'authoritative', setting => 'query-local-address', value => $my_query_local_address, }
   # + IPv6:
   #powerdns::config { 'authoritative-query-local-address': type => 'authoritative', setting => 'query-local-address', value   => '0.0.0.0 ::', }
 
