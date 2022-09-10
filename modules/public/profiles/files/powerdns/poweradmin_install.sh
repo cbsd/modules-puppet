@@ -8,8 +8,11 @@ PY_VER="39"
 # also see ln -s below
 # PostgresQL version (e.g. postgresXX-client)
 PG_VER="13"
+
 # MySQL version (e.g. mysqlXX-client)
-MY_VER="80"
+# should be in sync with
+# grep ^MYSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
+MY_VER="57"
 # OpenLDAP version (e.g. openldapXX-client)
 LDAP_VER="26"
 
