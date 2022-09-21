@@ -190,4 +190,5 @@ class roundcube (
   class { 'roundcube::install': }
   class { 'roundcube::config': }
   ~> class { 'roundcube::service': }
+  ~> class { 'roundcube::initdb': }
 }

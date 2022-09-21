@@ -114,13 +114,4 @@ class roundcube::install inherits roundcube {
     }
   }
 
-  file { "/usr/local/bin/roundcube-db-initial.sh":
-    mode    => '0555',
-    ensure  => present,
-    content => template("${module_name}/roundcube-${roundcube::db_type}-initial.sh.erb"),
-  }
-  -> exec { "/usr/local/bin/roundcube-db-initial.sh":
-      onlyif      => "test ! -f /var/db/roundcube-mysql-initial.log",
-      path        => $roundcube::exec_paths,
-  }
 }
