@@ -1,7 +1,7 @@
 #!/usr/local/bin/cbsd
 #v12.1.13
-MYARG="jname"
-MYOPTARG="mode formfile debug_form module gen_hiera"
+MYARG=""
+MYOPTARG="mode formfile debug_form module gen_hiera jname"
 MYDESC="Generate puppet manifests"
 ADDHELP=" module= specify module name\n\
  mode= apply - puppet apply\n\
@@ -305,83 +305,131 @@ puppet_pass()
 	${UMOUNT_CMD} -f ${path}/tmp/puppet
 }
 
+cbsdpuppet_main()
+{
+	case "${jname}" in
+		CBSDSYS|cbsdpuppet1)
+			;;
+		*)
+			. ${subrdir}/rcconf.subr
+			[ $? -eq 1 ] && err 1 "${N1_COLOR}${CBSD_APP}: no such jail: ${N2_COLOR}${jname}${N0_COLOR}"
+			;;
+	esac
+
+	[ -z "${mode}" ] && mode="show"
+
+	if [ -n "${module}" ]; then
+		[ -z "${formfile}" ] && formfile="${jailsysdir}/${jname}/helpers/${module}.sqlite"
+		my_module_dir="${distmoduledir}/forms.d/${module}"
+		sitepp="${my_module_dir}/site.pp"
+
+		[ ! -r ${sitepp} ] && err 1 "${N1_COLOR}${CBSD_APP}: no such site.pp: ${N2_COLOR}${sitepp}${N0_COLOR}"
+		. ${sitepp}
+
+		mksitefile="${distmoduledir}/forms.d/${module}/site.pp"
+
+		# not manually managed
+		if [ ${gen_hiera} -eq 1 ]; then
+			[ ! -r ${formfile} ] && err 1 "${N0_COLOR}${CBSD_APP}: no such formfile: ${N2_COLOR}${formfile}${N0_COLOR}"
+			. ${subrdir}/imghelper.subr
+
+			readconf helpers.conf
+
+			param=$( cbsdsqlro ${formfile} SELECT param FROM forms ORDER BY CAST\(order_id AS int\) | ${XARGS_CMD} )
+			load_forms
+			load_new
+		fi
+	fi
+
+	local_puppet_dir="${jailsysdir}/${jname}/puppet"
+	local_puppet_manifest_dir="${local_puppet_dir}/manifest"
+	local_puppet_hieradata_dir="${local_puppet_dir}/hieradata"
+
+	[ ! -d ${local_puppet_manifest_dir} ] && ${MKDIR_CMD} -p ${local_puppet_manifest_dir}
+	[ ! -d ${local_puppet_hieradata_dir} ] && ${MKDIR_CMD} -p ${local_puppet_hieradata_dir}
+
+	case "${mode}" in
+		apply)
+			if [ -n "${module}" ]; then
+				${ECHO} "${N1_COLOR}applying puppet manifest for: ${N2_COLOR}${module}${N0_COLOR}"
+			else
+				${ECHO} "${N1_COLOR}applying puppet manifest from: ${N2_COLOR}${local_puppet_manifest_dir}/init.pp${N0_COLOR}"
+			fi
+			[ -z "${puppet_apply_method}" ] && puppet_apply_method="local"
+			# not manually managed
+			if [ ${gen_hiera} -eq 1 ]; then
+				merge_new
+			fi
+			puppet_setup
+			;;
+		pass)
+			puppet_pass
+			;;
+		*)
+			[ -z "${module}" ] && err 1 "${N1_COLOR}specify module=${N0_COLOR}"
+			echo "Manifest dir: $local_puppet_manifest_dir" >&2
+			echo "Hiera dir: $local_puppet_hieradata_dir" >&2
+
+			generate_manifest > ${local_puppet_manifest_dir}/${module}.pp
+			generate_hieradata > ${local_puppet_hieradata_dir}/${module}.yaml
+			generate_manifest
+			;;
+	esac
+
+	exit 0
+}
+
 
 # MAIN
 debug_form=0
+jname=
+ojname=
 . ${cbsdinit}
 [ -z "${gen_hiera}" ] && gen_hiera=1
+[ -n "${jname}" ] && ojname="${jname}"
 
 readconf puppetd.conf
 
 [ -z "${jail_workdir}" ] && jail_workdir="/tmp/cbsd"
 
-case "${jname}" in
-	CBSDSYS|cbsdpuppet1)
-		;;
-	*)
-		. ${subrdir}/rcconf.subr
-		[ $? -eq 1 ] && err 1 "${N1_COLOR}${CBSD_APP}: no such jail: ${N2_COLOR}${jname}${N0_COLOR}"
-		;;
-esac
+## CBSDfile
+emulator="jail"		# for jname_is_multiple
 
-[ -z "${mode}" ] && mode="show"
+# check for cloud function when CBSDfile exist
+Makefile="${CBSD_PWD}/CBSDfile"
+if [ -r ${Makefile} ]; then
+	[ -z "${CBSDFILE_RECURSIVE}" ] && ${ECHO} "${N1_COLOR}found CBSDfile: ${N2_COLOR}${Makefile}${N0_COLOR}" 1>&2
+	. ${Makefile}
 
-if [ -n "${module}" ]; then
-	[ -z "${formfile}" ] && formfile="${jailsysdir}/${jname}/helpers/${module}.sqlite"
-	my_module_dir="${distmoduledir}/forms.d/${module}"
-	sitepp="${my_module_dir}/site.pp"
+	all_jail_list=$( ${EGREP_CMD} '^jail_[a-zA-Z0-9_@%:][-a-zA-Z0-9_@%:]*\(\)$' ${Makefile} | ${XARGS_CMD} | ${TR_CMD} -d "()" | ${SED_CMD} s#jail_##g )
+	[ -z "${all_jail_list}" ] && err 1 "${N1_COLOR}${CBSD_APP}: no jail found${N0_COLOR}"
 
-	[ ! -r ${sitepp} ] && err 1 "${N1_COLOR}${CBSD_APP}: no such site.pp: ${N2_COLOR}${sitepp}${N0_COLOR}"
-	. ${sitepp}
-
-	mksitefile="${distmoduledir}/forms.d/${module}/site.pp"
-
-	# not manually managed
-	if [ ${gen_hiera} -eq 1 ]; then
-		[ ! -r ${formfile} ] && err 1 "${N0_COLOR}${CBSD_APP}: no such formfile: ${N2_COLOR}${formfile}${N0_COLOR}"
-		. ${subrdir}/imghelper.subr
-
-		readconf helpers.conf
-
-		param=$( cbsdsqlro ${formfile} SELECT param FROM forms ORDER BY CAST\(order_id AS int\) | ${XARGS_CMD} )
-		load_forms
-		load_new
+	if [ -n "${ojname}" ]; then
+		# specified in args
+		found=0
+		for jname in ${all_jail_list}; do
+			[ "${jname}" = "${ojname}" ] && found=1 && break
+		done
+		[ ${found} -ne 1 ] && err 1 "${N1_COLOR}${CBSD_APP}: no jail found in CBSDfile: ${N2_COLOR}${ojname}${N1_COLOR}. Valid list: ${N2_COLOR}${all_jail_list}${N0_COLOR}"
+		cbsdpuppet_main ${ojname}
+		ret=$?
+		exit ${ret}
 	fi
+
+	if [ -n "${CLOUD_URL}" -a -n "${CLOUD_KEY}" ]; then
+		cbsd_api=1
+	else
+		# CBSDfile without API
+		for jname in ${all_jail_list}; do
+			${ECHO} "${N1_COLOR}exec jlogin to: ${N2_COLOR}${jname}${N0_COLOR}" 1>&2
+			cbsdpuppet_main
+		done
+		exit 0
+	fi
+else
+	cbsd_api=0
 fi
 
-local_puppet_dir="${jailsysdir}/${jname}/puppet"
-local_puppet_manifest_dir="${local_puppet_dir}/manifest"
-local_puppet_hieradata_dir="${local_puppet_dir}/hieradata"
+[ -z "${jname}" ] && err 1 "${N1_COLOR}${CBSD_APP}: give me: ${N2_COLOR}jname${N0_COLOR}"
 
-[ ! -d ${local_puppet_manifest_dir} ] && ${MKDIR_CMD} -p ${local_puppet_manifest_dir}
-[ ! -d ${local_puppet_hieradata_dir} ] && ${MKDIR_CMD} -p ${local_puppet_hieradata_dir}
-
-case "${mode}" in
-	apply)
-		if [ -n "${module}" ]; then
-			${ECHO} "${N1_COLOR}applying puppet manifest for: ${N2_COLOR}${module}${N0_COLOR}"
-		else
-			${ECHO} "${N1_COLOR}applying puppet manifest from: ${N2_COLOR}${local_puppet_manifest_dir}/init.pp${N0_COLOR}"
-		fi
-		[ -z "${puppet_apply_method}" ] && puppet_apply_method="local"
-		# not manually managed
-		if [ ${gen_hiera} -eq 1 ]; then
-			merge_new
-		fi
-		puppet_setup
-		;;
-	pass)
-		puppet_pass
-		;;
-	*)
-		[ -z "${module}" ] && err 1 "${N1_COLOR}specify module=${N0_COLOR}"
-		echo "Manifest dir: $local_puppet_manifest_dir" >&2
-		echo "Hiera dir: $local_puppet_hieradata_dir" >&2
-
-		generate_manifest > ${local_puppet_manifest_dir}/${module}.pp
-		generate_hieradata > ${local_puppet_hieradata_dir}/${module}.yaml
-		generate_manifest
-		;;
-esac
-
-exit 0
+cbsdpuppet_main
