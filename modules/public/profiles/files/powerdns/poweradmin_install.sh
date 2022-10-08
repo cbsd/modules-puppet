@@ -35,7 +35,7 @@ if [ -r ${DST_DIR}/buildok ]; then
 	exit 0
 fi
 
-my_packages="python${PY_VER} py${PY_VER}-pip git mc www/yarn libxml2 libxslt openldap${LDAP_VER}-client py${PY_VER}-ldap3 mysql${MY_VER}-client postgresql${PG_VER}-client xmlsec1 py${PY_VER}-xmlsec"
+my_packages="python${PY_VER} py${PY_VER}-pip git www/yarn libxml2 libxslt openldap${LDAP_VER}-client py${PY_VER}-ldap3 mysql${MY_VER}-client postgresql${PG_VER}-client xmlsec1 py${PY_VER}-xmlsec"
 # most of pip/py- module version is hardcoded in requirenments.txt, but several module not strictly ( >= ): install from the pkg:
 my_packages="${my_packages} py${PY_VER}-bcrypt py${PY_VER}-dnspython py${PY_VER}-python3-saml"
 
