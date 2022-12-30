@@ -3,7 +3,6 @@ class redmine::mysql inherits redmine {
   $config_file = '/usr/local/etc/mysql/my.cnf'
 
   class { '::mysql::server':
-    #root_password           => $db_root_password,
     remove_default_accounts => $redmine::remove_default_accounts,
     package_name            => "mysql${redmine::mysql_version}-server",
     create_root_my_cnf      => false,

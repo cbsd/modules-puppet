@@ -2,7 +2,6 @@ class redmine(
   $db_name                  = "redmine",
   $db_user                  = "redmine",
   $db_password              = "redmine_password",
-  $db_root_password         = "root_password",
   $redmine_port             = 3000,
   $redmine_package          = "redmine50",
   $remove_default_accounts  = true,
