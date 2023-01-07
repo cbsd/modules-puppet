@@ -85,6 +85,8 @@ EOF
 
 apply_in_jail_local()
 {
+	local _ret=0
+
 	${ECHO} "${N1_COLOR}${CBSD_APP}: ${N2_COLOR}apply local...${N0_COLOR}"
 
 	if [ ${debug_form} -eq 1 ]; then
@@ -100,6 +102,7 @@ apply_in_jail_local()
 				fi
 
 				jexec jname=${jname} env LANG=en_US.UTF-8 /tmp/cbsdpuppet/puppetcbsd debug ${jail_workdir}/puppet_root/manifest/init.pp
+				_ret=$?
 				;;
 		esac
 	else
@@ -112,10 +115,11 @@ apply_in_jail_local()
 					sysrc jname=${jname} ${have_restart}_enable="YES"
 				fi
 				jexec jname=${jname} env LANG=en_US.UTF-8 /tmp/cbsdpuppet/puppetcbsd ${jail_workdir}/puppet_root/manifest/init.pp
+				_ret=$?
 				;;
 		esac
 	fi
-	echo "***"
+	echo "***, retcode: ${_ret}"
 
 	for _i in ${path}/tmp/cbsdpuppet/modules/public ${path}/usr/local/etc/puppet/modules ${path}/tmp/puppet/etc/puppet ${path}/tmp/cbsdpuppet ${path}${jail_workdir}/puppet_root ${path}/tmp/puppet; do
 		is_mounted ${_i} && ${UMOUNT_CMD} -f ${_i}
@@ -135,13 +139,15 @@ apply_in_jail_local()
 			fi
 		fi
 	fi
+
+	return ${_ret}
 }
 
 # todo
 # reload only when changed
 puppet_setup()
 {
-	local _was_started
+	local _was_started _ret=0
 
 	case "${jname}" in
 		CBSDSYS|cbsdpuppet1)
@@ -289,8 +295,11 @@ EOF
 	case "${emulator}" in
 		jail)
 			apply_in_jail_${puppet_apply_method}
+			_ret=$?
 			;;
 	esac
+
+	return ${_ret}
 }
 
 # todo
@@ -337,6 +346,8 @@ puppet_pass()
 
 cbsdpuppet_main()
 {
+	local _ret=0
+
 	case "${jname}" in
 		CBSDSYS|cbsdpuppet1)
 			;;
@@ -404,15 +415,17 @@ EOF
 			fi
 			[ -z "${puppet_apply_method}" ] && puppet_apply_method="local"
 			# not manually managed
-			if [ "${module}" != "fs" ]; then
+			if [ -n "${module}" -a "${module}" != "fs" ]; then
 				if [ ${gen_hiera} -eq 1 ]; then
 					merge_new
 				fi
 			fi
 			puppet_setup
+			_ret=$?
 			;;
 		pass)
 			puppet_pass
+			_ret=$?
 			;;
 		*)
 			[ -z "${module}" ] && err 1 "${N1_COLOR}specify module=${N0_COLOR}"
@@ -425,7 +438,7 @@ EOF
 			;;
 	esac
 
-	return
+	return ${_ret}
 }
 
 
@@ -483,5 +496,9 @@ fi
 
 cbsdpuppet_main
 ret=$?
+
+if [ ${ret} -ne 0 -a "${debug_form}" != "1" ]; then
+	${ECHO} "${W1_COLOR}${CBSD_APP} error: try to debug with debug flag: ${N2_COLOR}debug_form=1${N0_COLOR}"
+fi
 
 exit ${ret}
