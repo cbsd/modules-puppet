@@ -8,6 +8,22 @@ ${H3_COLOR}Description${N0_COLOR}:
 
 Manage jail content by Puppet SCM (server and serverless mode).
 
+When jail have Puppet structure in ~cbsd/jails-system/\$app1/puppet/ like:
+
+  hieradata/common.yaml (optional)
+  manifest/site.pp (optional)
+
+CBSD can apply 'puppet' in jail with Puppet manifest and hiera from this structure, so
+you can write any Puppet manifests to configure vitual environment content by 'mode=fs' mode.
+
+Take a look on 'puppet' profile and its example data:
+
+  /usr/local/cbsd/share/FreeBSD-jail-puppet-system-skel/puppet
+
+For example, you can create a container and apply these manifests:
+
+  cbsd jcreate jname=app1 jprofile=puppet
+
 ${H3_COLOR}Options${N0_COLOR}:
 
  ${N2_COLOR}debug_form${N0_COLOR} - pass 'debug' to puppet apply;
@@ -21,11 +37,13 @@ ${H3_COLOR}Options${N0_COLOR}:
 ${H3_COLOR}Examples${N0_COLOR}:
 
  # cbsd puppet jname=vmagent2 mode=pass
+ # cbsd puppet jname=app1 mode=fs
 
 ${H3_COLOR}See also${N0_COLOR}:
 
   cbsd module --help
   cbsd forms --help
+  cbsd jcreate --help
 
 "
 

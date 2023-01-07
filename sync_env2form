@@ -42,3 +42,5 @@ ${GREP_CMD} ^H ${tmp} | while read _line; do
 		fi
 	done
 done
+
+exit 0

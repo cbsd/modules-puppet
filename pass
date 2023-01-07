@@ -76,5 +76,8 @@ ${DIR}/bin/ruby -I${DIR}/lib/ruby/vendor_ruby -I \
 "${DIR}/lib/ruby/${RUBY_VER}/" -I "${DIR}/bin/" -I "${RUBY_PLATFORM_DIR}" \
 -I "${DIR}/lib/ruby/site_ruby/${RUBY_VER}/" \
 ${PUPPET_CMD} agent -t $@
+ret=$?
 
 [ "${debug_args}" = "debug" ] && read p
+
+exit ${ret}
