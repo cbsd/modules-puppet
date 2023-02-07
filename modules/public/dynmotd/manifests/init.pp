@@ -4,12 +4,15 @@ class dynmotd(
 {
   case $::osfamily {
     'FreeBSD': {
+      file { '/usr/local/bin':
+        ensure => directory,
+      }
       file { '/usr/local/bin/dynmotd.sh':
         ensure => $ensure,
         mode   => '0755',
         owner  => 'root',
         group  => 'wheel',
-        source => 'puppet:///modules/dynmotd/dynmotd.sh.FreeBSD',
+        source => [ "puppet:///modules/dynmotd/dynmotd.sh.${::fqdn}", 'puppet:///modules/dynmotd/dynmotd.sh.FreeBSD' ]
       }
       if $ensure == 'present' {
         file_line { 'freebsd-dynmotd-profile':
@@ -33,7 +36,7 @@ class dynmotd(
       }
       file { '/etc/motd':
         ensure  => present,
-        mode => '644',
+        mode    => '644',
         content => "",
       }
       file { '/etc/motd.template':
@@ -43,7 +46,7 @@ class dynmotd(
       }
       file { '/var/run/motd':
         ensure  => present,
-        mode => '644',
+        mode    => '644',
         content => "",
       }
     }
@@ -58,13 +61,12 @@ class dynmotd(
     }
   }
 
-
-
-
-#  file { '/tmp/puppet.info':
-#    ensure  => present,
-#    mode => '444',
-#    content => hiera('puppet::info'),
-#  }
-
+  if $role_config {
+    file { '/tmp/puppet.info':
+      ensure  => present,
+      mode    => '444',
+      content => "$role_config",
+      #hiera('puppet::info'),
+    }
+  }
 }
