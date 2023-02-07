@@ -61,6 +61,13 @@ else
 	debug_args="crit"
 fi
 
+if [ "${1}" = "nocolor" ]; then
+	shift
+	color_args="--color=false"
+else
+	color_args=""
+fi
+
 DIR="/tmp/puppet"
 
 PUPPET_CMD="${DIR}/bin/puppet"
@@ -75,7 +82,7 @@ export PATH=${DIR}/bin:${DIR}/sbin:$PATH
 ${DIR}/bin/ruby -I${DIR}/lib/ruby/vendor_ruby -I \
 "${DIR}/lib/ruby/${RUBY_VER}/" -I "${DIR}/bin/" -I "${RUBY_PLATFORM_DIR}" \
 -I "${DIR}/lib/ruby/site_ruby/${RUBY_VER}/" \
-${PUPPET_CMD} agent -t $@
+${PUPPET_CMD} agent -t ${color_args} $@
 ret=$?
 
 [ "${debug_args}" = "debug" ] && read p

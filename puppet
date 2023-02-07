@@ -1,7 +1,7 @@
 #!/usr/local/bin/cbsd
 #v12.1.13
 MYARG=""
-MYOPTARG="debug_form formfile gen_hiera jname mode module"
+MYOPTARG="debug_form formfile gen_hiera jname mode module logfile"
 MYDESC="Generate puppet manifests"
 ADDHELP="
 ${H3_COLOR}Description${N0_COLOR}:
@@ -356,7 +356,11 @@ puppet_pass()
 	${MOUNT_CMD} -t nullfs -oro /usr/local/cbsd/modules/puppet.d ${path}/tmp/cbsdpuppet
 	${MOUNT_CMD} -t nullfs -oro ${workdir}/jails-data/cbsdpuppet1-data/usr/local ${path}/tmp/puppet
 
-	jexec jname=${jname} env LANG=en_US.UTF-8 /tmp/cbsdpuppet/pass
+	if [ -n "${logfile}" ]; then
+		jexec jname=${jname} env LANG=en_US.UTF-8 /tmp/cbsdpuppet/pass nocolor > ${logfile} 2>&1
+	else
+		jexec jname=${jname} env LANG=en_US.UTF-8 /tmp/cbsdpuppet/pass
+	fi
 
 	${UMOUNT_CMD} -f ${path}/tmp/cbsdpuppet
 	${UMOUNT_CMD} -f ${path}/tmp/puppet
@@ -464,6 +468,7 @@ EOF
 debug_form=0
 jname=
 ojname=
+logfile=
 . ${cbsdinit}
 [ -z "${gen_hiera}" ] && gen_hiera=1
 [ -n "${jname}" ] && ojname="${jname}"

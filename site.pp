@@ -4,3 +4,4 @@ $provider = "pkgng"
 
 # we user this hier everywhere
 file { ['/root/bin', '/root/etc', '/usr/local', '/usr/local/bin', '/usr/local/etc/rc.d' ]: ensure =>directory, }
+
