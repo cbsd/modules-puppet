@@ -40,7 +40,7 @@ my_packages="python${PY_VER} py${PY_VER}-pip git www/yarn libxml2 libxslt openld
 my_packages="${my_packages} py${PY_VER}-bcrypt py${PY_VER}-dnspython py${PY_VER}-python3-saml py${PY_VER}-pillow"
 
 # notes: py-bcrypt and py-cryptography require rust via pip install
-my_packages="${my_packages} rust"
+my_packages="${my_packages} rust npm-node18"
 
 # use pyXX-ldap from pkg due to we need to remove 'ldap_r' deps: /usr/ports/net/py-ldap/files/patch-setup.py
 my_packages="${my_packages} py${PY_VER}-ldap"
