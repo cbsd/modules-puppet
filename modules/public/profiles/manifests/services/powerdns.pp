@@ -234,7 +234,7 @@ class profiles::services::powerdns (
     exec { "powerdnsadmin_install":
       command => "/root/powerdns/poweradmin_install.sh",
       # default 300 sec too small for install
-      timeout => 1500,
+      timeout => 2000,
       onlyif  => "/usr/bin/env test ! -r /usr/local/etc/rc.d/powerdnsadmin",
     }
     # ->
