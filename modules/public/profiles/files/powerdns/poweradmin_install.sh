@@ -12,7 +12,7 @@ PG_VER="13"
 # MySQL version (e.g. mysqlXX-client)
 # should be in sync with
 # grep ^MYSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
-MY_VER="57"
+MY_VER="80"
 # OpenLDAP version (e.g. openldapXX-client)
 LDAP_VER="26"
 
