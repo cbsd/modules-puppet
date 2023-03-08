@@ -180,8 +180,17 @@ class profiles::services::powerdns (
           }
         }
 
+        #  todo: version to params
+        # package_name            => "mysql${powerdns::mysql_version}-client",
+
+
+        class { 'mysql::client':
+          package_name            => "mysql80-client",
+        }
+
         class { '::mysql::server':
           root_password      => $::powerdns::db_root_password,
+          package_name       => "mysql80-server",
           service_manage     => true,
           restart            => true,
           override_options   => $override_options,
