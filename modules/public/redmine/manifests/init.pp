@@ -5,7 +5,7 @@ class redmine(
   $redmine_port             = 3000,
   $redmine_package          = "redmine50",
   $remove_default_accounts  = true,
-  $mysql_version            = '80',
+  $mysql_version            = '57',
   $mysql_max_connection     = '128',
   $mysql_bind_address       = '127.0.0.1',
   $mysql_expire_logs_days   = '10',
