@@ -8,7 +8,15 @@ class profiles::mq::rabbitmq (
   Hash $plugins = {},
 ){
 
-  include erlang
+  case $facts['os']['family'] {
+    'Debian': {
+      include erlang 
+    }
+    'RedHat': {
+      include erlang 
+    }
+  }
+
 
   class { '::rabbitmq':
     * => $globals,
