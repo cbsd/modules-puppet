@@ -1,0 +1,8 @@
+[Unit]
+Description=csync2 connection handler
+After=syslog.target
+
+[Service]
+ExecStart=-<%= @csync2_bin %> -i<% if @service_opts %>  <%= @service_opts %><% end %>
+StandardInput=socket
+StandardOutput=socket

@@ -1,0 +1,82 @@
+# Managed by Puppet
+#
+<%-
+  def unbound_version
+    @unbound_version ? @unbound_version : '0.a'
+  end
+  def print_config(name, value, version=false )
+    if version and scope.call_function('versioncmp', [unbound_version, version]) < 0
+       return
+    end
+    if value.is_a?(TrueClass)
+      return "  #{name}: yes\n"
+    elsif value.is_a?(FalseClass)
+      return "  #{name}: no\n"
+    elsif not value
+      return
+    elsif value.is_a?(String)
+      return "  #{name}: \"#{value}\"\n"
+    elsif value.is_a?(Integer)
+      return "  #{name}: #{value}\n"
+    elsif value.is_a?(Array)
+      str = ''
+      value.each { |v| str << "  #{name}: \"#{v}\"\n" }
+      return str
+    end
+  end
+-%>
+<%- if @module_config and @module_config.include?('dns64') -%>
+<%= print_config('dns64-prefix', @dns64_prefix) -%>
+<%= print_config('dns64-synthall', @dns64_synthall) -%>
+<%- end -%>
+<%- if @module_config and @module_config.include?('subnetcache') -%>
+<%= print_config('send-client-subnet', @send_client_subnet, '1.6.1') -%>
+<%= print_config('client-subnet-zone', @client_subnet_zone, '1.6.1') -%>
+<%= print_config('client-subnet-always-forward', @client_subnet_always_forward, '1.6.1') -%>
+<%= print_config('max-client-subnet-ipv6', @max_client_subnet_ipv6, '1.6.1') -%>
+<%= print_config('max-client-subnet-ipv4', @max_client_subnet_ipv4, '1.6.1') -%>
+<%= print_config('min-client-subnet-ipv6', @min_client_subnet_ipv6, '1.8.2') -%>
+<%= print_config('min-client-subnet-ipv4', @min_client_subnet_ipv4, '1.8.2') -%>
+<%= print_config('max-ecs-tree-size-ipv4', @max_ecs_tree_size_ipv4, '1.8.2') -%>
+<%= print_config('max-ecs-tree-size-ipv6', @max_ecs_tree_size_ipv6, '1.8.2') -%>
+<%- end -%>
+<%- if @module_config and @module_config.include?('ipsecmod') -%>
+<%- raise Puppet::Error, 'you must set ipsecmod_hook if using ipsecmod' unless @ipsecmod_hook -%>
+<%= print_config('ipsecmod-enabled', @ipsecmod_enabled, '1.6.4') -%>
+<%= print_config('ipsecmod-hook', @ipsecmod_hook, '1.6.4') -%>
+<%= print_config('ipsecmod-strict', @ipsecmod_strict, '1.6.4') -%>
+<%= print_config('ipsecmod-max-ttl', @ipsecmod_max_ttl, '1.6.4') -%>
+<%= print_config('ipsecmod-ignore-bogus', @ipsecmod_ignore_bogus, '1.6.4') -%>
+<%= print_config('ipsecmod-whitelist', @ipsecmod_whitelist, '1.6.4') -%>
+<%- end -%>
+<%- if @module_config and @module_config.include?('python') -%>
+<%- raise Puppet::Error, 'you must set python_script if using python' unless @python_script -%>
+python:
+<%= print_config('python-script', @python_script) -%>
+<%- end -%>
+<%- if @module_config and @module_config.include?('cachedb') -%>
+cachedb:
+<%= print_config('backend', @backend) -%>
+<%= print_config('secret-seed', @secret_seed) -%>
+  <%- if @backend == 'redis' -%>
+<%= print_config('redis-server-host', @redis_server_host) -%>
+<%= print_config('redis-server-port', @redis_server_port) -%>
+<%= print_config('redis-timeout', @redis_timeout) -%>
+  <%- end -%>
+<%- end -%>
+<%- if @module_config and @module_config.include?('respip') -%>
+  <%- @rpzs.each_pair do |name, rpz| -%>
+rpz:
+  name: <%= name %>
+<%= print_config('primary', rpz['primary']) -%>
+<%= print_config('primary', rpz['master']) -%>
+<%= print_config('url', rpz['url']) -%>
+<%= print_config('allow-notify', rpz['allow_notify']) -%>
+<%= print_config('zonefile', rpz['zonefile']) -%>
+<%= print_config('rpz-action-overrude', rpz['rpz_action_override']) -%>
+<%= print_config('rpz-cname-override', rpz['rpz_cname_override']) -%>
+<%= print_config('rpz-log', rpz['rpz_log']) -%>
+<%= print_config('rpz-log-name', rpz['rpz_log_name']) -%>
+<%= print_config('tags', rpz['tags']) -%>
+  <%- end -%>
+<%- end -%>

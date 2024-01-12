@@ -1,0 +1,38 @@
+
+group <%= @group %> {
+<% @hosts.each do |i| -%>
+      host <%= i %>;
+<% end -%>
+
+      key <%= @_key_path %>;
+<% @blocks.each do |v| %>
+<% if v['includes'] -%>
+<% v['includes'].each do |i| -%>
+      include <%= i %>;
+<% end -%>
+<% end -%>
+<% if v['excludes'] -%>
+<% v['excludes'].each do |e| -%>
+      exclude <%= e %>;
+<% end -%>
+<% end -%>
+<% if v['actions'] -%>
+<% v['actions'].each do |a| -%>
+      action {
+<% a['pattern'].each do |pattern| -%>
+            pattern <%= pattern %>;
+<% end -%>
+<% a['exec'].each do |exec| -%>
+            exec "<%= exec %>";
+<% end -%>
+<% if a['logfile'] -%>
+            logfile "<%= a['logfile'] %>";
+<% end -%>
+            <%= a['do'] %>;
+      }
+<% end -%>
+<% end -%>
+<% end -%>
+
+      auto <%= @auto %>;
+}

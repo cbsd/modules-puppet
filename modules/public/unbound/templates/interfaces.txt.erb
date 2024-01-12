@@ -1,0 +1,7 @@
+# Used by puppet-unbound
+<% unless @interface.empty? -%>
+<%= @interface.join("\n") %>
+<% else -%>
+<%= String.new %>
+<% end -%>
+

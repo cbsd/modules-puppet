@@ -1,0 +1,8 @@
+---
+csync2::globals::config_dir: /etc
+csync2::globals::config_path: /etc/csync2.cfg
+csync2::globals::csync2_bin: /usr/sbin/csync2
+csync2::globals::ssl_cert_path: /etc/csync2_ssl_cert.pem
+csync2::globals::ssl_key_path: /etc/csync2_ssl_key.pem
+csync2::globals::service_name: csync2.socket
+csync2::globals::package_name: csync2

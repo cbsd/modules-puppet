@@ -1,0 +1,5 @@
+---
+unbound::chroot: ''
+unbound::runtime_dir: '/var/lib/unbound'
+unbound::fetch_client: 'curl -o'
+unbound::validate_cmd: '/usr/sbin/unbound-checkconf %'
