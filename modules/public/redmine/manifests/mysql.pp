@@ -42,7 +42,7 @@ class redmine::mysql inherits redmine {
   mysql::db { $redmine::db_name:
     user        => $redmine::db_user,
     password    => $redmine::db_password,
-    host        => $::ipaddress,
+    host        => $facts['ipaddress'],
     grant       => 'ALL',
   }
 }
