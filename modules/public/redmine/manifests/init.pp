@@ -3,7 +3,7 @@ class redmine(
   $db_user                  = "redmine",
   $db_password              = "redmine_password",
   $redmine_port             = 3000,
-  $redmine_package          = "redmine50",
+  $redmine_package          = "redmine51",
   $remove_default_accounts  = true,
   $mysql_version            = '57',
   $mysql_max_connection     = '128',
