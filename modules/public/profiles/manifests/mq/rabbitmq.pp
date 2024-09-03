@@ -50,7 +50,7 @@ if $hahost1 != '' {
     target       => '/etc/hosts',
   }
 } else {
-  host { "${::fqdn}":
+  host { "$facts['networking']['fqdn']":
     ensure       => 'present',
     host_aliases => ["${::hostname}"],
     ip           => "${::ipaddress}",
