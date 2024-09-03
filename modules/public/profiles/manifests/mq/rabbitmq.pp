@@ -52,7 +52,7 @@ if $hahost1 != '' {
 } else {
   host { "$facts['networking']['fqdn']":
     ensure       => 'present',
-    host_aliases => ["${::hostname}"],
+    host_aliases => ["$facts['networking']['hostname']"],
     ip           => "${::ipaddress}",
     target       => '/etc/hosts',
   }
